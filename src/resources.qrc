@@ -1,0 +1,29 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>icon/01D_CamOnly.png</file>
+        <file>icon/01E_CamOnly.png</file>
+        <file>icon/02D_TextBelow.png</file>
+        <file>icon/02E_TextBelow.png</file>
+        <file>icon/03D_TextAbove.png</file>
+        <file>icon/03E_TextAbove.png</file>
+        <file>icon/04D_RightSlide1.png</file>
+        <file>icon/04E_RightSlide1.png</file>
+        <file>icon/05D_LeftSlide1.png</file>
+        <file>icon/05E_LeftSlide1.png</file>
+        <file>icon/06D_RightSlide.png</file>
+        <file>icon/06E_RightSlide.png</file>
+        <file>icon/07D_LeftSlide.png</file>
+        <file>icon/07E_LeftSlide.png</file>
+        <file>icon/08D_SlideOnCam.png</file>
+        <file>icon/08E_SlideOnCam.png</file>
+        <file>icon/09D_SlideOnly.png</file>
+        <file>icon/09E_SlideOnly.png</file>
+        <file>icon/10D_Disable.png</file>
+        <file>icon/10E_Disable.png</file>
+        <file>icon/11D_Begin.png</file>
+        <file>icon/11E_Begin.png</file>
+        <file>icon/99D_Custom.png</file>
+        <file>icon/99E_Custom.png</file>
+        <file>icon/MainWindow.png</file>
+    </qresource>
+</RCC>
