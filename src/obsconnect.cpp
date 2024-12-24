@@ -9,8 +9,8 @@
 #include <QJsonArray>
 #include "cvcsetting.h"
 
-OBSConnect::OBSConnect()
-    : QWebSocket()
+OBSConnect::OBSConnect(const OBSSettings& obsSettings)
+    : QWebSocket(), settings(obsSettings)
 {
     connect(this, &QWebSocket::connected, this, [this]() { emit updateStatus("OBS connecting."); });
     connect(this, &QWebSocket::disconnected, this, [this]() { emit updateStatus("OBS disconnected."); connectOBS(); });
@@ -25,8 +25,8 @@ void OBSConnect::connectOBS()
     QTimer::singleShot( 5000, this, [this] () {
         QUrl url;
         url.setScheme("ws");
-        url.setHost(OBS_SERVER);
-        url.setPort(OBS_PORT);
+        url.setHost(settings.OBS_HOST);
+        url.setPort(settings.OBS_PORT);
         open(url);
     });
 }

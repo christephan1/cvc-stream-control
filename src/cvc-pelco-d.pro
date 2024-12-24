@@ -18,7 +18,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     cvcpelcod.cpp \
-    obsconnect.cpp
+    obsconnect.cpp \
+    visca.cpp \
+    cvcsetting.cpp
 
 HEADERS += \
     cvcpelcod.h \

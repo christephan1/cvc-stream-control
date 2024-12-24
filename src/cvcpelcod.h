@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <array>
+#include <vector>
 #include <queue>
 #include <functional>
 #include "cvcsetting.h"
@@ -20,6 +21,7 @@ class QTimer;
 QT_END_NAMESPACE
 
 class OBSConnect;
+class CameraConnect;
 
 class CVCPelcoD : public QMainWindow
 {
@@ -54,13 +56,14 @@ private:
     Ui::CVCPelcoD *ui;
     QGamepad *gamepad = nullptr;
     OBSConnect *obsConnect = nullptr;
+    CVCSettings settings;
 
     std::array<QPushButton*,11> obsScene;
     unsigned curScene = 0;
 
     std::map<int,bool> isCamMoving;// = {{2,false}, {3,false}, {4,false}};
     std::map<int,bool> isManualFocus;// = {{2,false}, {3,false}, {4,false}};
-    int camId = MIN_CAM_ID;
+    int camIndex = -1;
 
     int prevZoomValue = 0;
     int prevFocusValue = 0;
@@ -70,7 +73,7 @@ private:
     int prevCam = 0;
 
     // Socket related
-    QUdpSocket* udp_sock;
+    std::vector<CameraConnect*> cameraConnect;
     QTimer* udp_timeout;
     std::queue<std::function<bool()>> cmdQueue;
     bool is_sock_idle = true;

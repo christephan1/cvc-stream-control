@@ -9,10 +9,12 @@ QT_BEGIN_NAMESPACE
 class QJsonArray;
 QT_END_NAMESPACE
 
+class OBSSettings;
+
 class OBSConnect : public QWebSocket {
     Q_OBJECT
     public:
-        OBSConnect();
+        OBSConnect(const OBSSettings&);
         virtual ~OBSConnect() {}
 
         void switchToScene(uint_fast8_t sceneId, uint_fast8_t camId);
@@ -40,6 +42,8 @@ class OBSConnect : public QWebSocket {
         void processOBSMsg(const QString& msg);
 
     private:
+        const OBSSettings& settings;
+
         bool isConnected = false;
         std::map<uint_fast8_t, std::map<uint_fast8_t, QString>> sceneMap; //sceneId->camId->sceneName
         bool isStudioMode = false;

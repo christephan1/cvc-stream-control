@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <QtGamepad/QGamepad>
 #include <QTimer>
+#include <QDir>
 #include "cvcpelcod.h"
 #include "ui_cvcpelcod.h"
 #include "visca.h"
@@ -13,8 +14,23 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     , ui(new Ui::CVCPelcoD)
 {
     ui->setupUi(this);
-    ui->camNo->setNum(camId);
+    try {
+        settings.parseJSON(QDir::homePath() + "/.cvc-stream-control.conf");
+    } catch (const std::exception &e) {
+        ui->statusbar->showMessage(e.what());
+        return;
+    }
+
+    if (settings.CAMERAS.empty()) {
+        camIndex = -1;
+        ui->camNo->setText("");
+    } else {
+        camIndex = 0;
+        ui->camNo->setNum(settings.CAMERAS[camIndex].CAMERA_ID);
+    }
     ui->sceneNo->setText(QString::number(curScene+1));
+
+    //Gamepad
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
         ui->statusbar->showMessage("No gamepad connected.");
@@ -40,16 +56,19 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
         connect(gamepad,&QGamepad::buttonUpChanged, this, &CVCPelcoD::selectOBSScene2);
         connect(gamepad,&QGamepad::buttonXChanged, this, &CVCPelcoD::switchOBSScene);
         connect(gamepad,&QGamepad::buttonGuideChanged, this, &CVCPelcoD::switchOBSStudioMode);
-
-        udp_sock = new QUdpSocket (this);
-        bool r = udp_sock->bind(QHostAddress(LOCAL_IP));
-        connect(udp_sock,&QUdpSocket::readyRead, this, &CVCPelcoD::execNextCommand);
-        setUdpSock(udp_sock);
-
-        udp_timeout = new QTimer (this);
-        connect(udp_timeout,&QTimer::timeout, this, &CVCPelcoD::execNextCommand);
     }
 
+    //Camera
+    for (const CameraSettings& camera : settings.CAMERAS) {
+        CameraConnect* connection = new CameraConnect(camera, this);
+        cameraConnect.push_back(connection);
+        connect(connection,&QUdpSocket::readyRead, this, &CVCPelcoD::execNextCommand);
+    }
+    cameraConnect.shrink_to_fit();
+    udp_timeout = new QTimer (this);
+    connect(udp_timeout,&QTimer::timeout, this, &CVCPelcoD::execNextCommand);
+
+    //OBS
     obsScene = {{
         ui->obsScene1,
         ui->obsScene2,
@@ -63,14 +82,13 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
         ui->obsScene10,
         ui->obsScene11
     }};
-    obsConnect = new OBSConnect;
+    obsConnect = new OBSConnect(settings.OBS);
     connect(obsConnect, &OBSConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
     connect(obsConnect, &OBSConnect::currentSceneChanged, this, &CVCPelcoD::selectOBSScene);
 }
 
 CVCPelcoD::~CVCPelcoD()
 {
-    if(gamepad) delete gamepad;
     if(obsConnect) delete obsConnect;
     delete ui;
 }
@@ -78,8 +96,8 @@ CVCPelcoD::~CVCPelcoD()
 void CVCPelcoD::selectPrevCam(bool en)
 {
     if (en) {
-        if (camId > MIN_CAM_ID) {
-            ui->camNo->setNum(--camId);
+        if (!settings.CAMERAS.empty() && camIndex > 0) {
+            ui->camNo->setNum(settings.CAMERAS[--camIndex].CAMERA_ID);
         }
     }
 }
@@ -87,14 +105,15 @@ void CVCPelcoD::selectPrevCam(bool en)
 void CVCPelcoD::selectNextCam(bool en)
 {
     if (en) {
-        if (camId < MAX_CAM_ID) {
-            ui->camNo->setNum(++camId);
+        if (!settings.CAMERAS.empty() && camIndex < settings.CAMERAS.size()-1) {
+            ui->camNo->setNum(settings.CAMERAS[++camIndex].CAMERA_ID);
         }
     }
 }
 
 void CVCPelcoD::selectPreset()
 {
+    if (settings.CAMERAS.empty()) return;
     double axisX = gamepad->axisRightX();
     double axisY = gamepad->axisRightY();
 
@@ -109,7 +128,7 @@ void CVCPelcoD::selectPreset()
             if (!timerAdd1) {
                 auto add1 = [this] () {
                     int presetNo = ui->presetNo->text().toInt();
-                    if (presetNo >= MAX_PRESET_NO) return;
+                    if (presetNo >= settings.CAMERAS[camIndex].MAX_PRESET_NO) return;
                     ui->presetNo->setNum(presetNo+1);
                 };
                 timerAdd1 = new QTimer (this);
@@ -131,7 +150,7 @@ void CVCPelcoD::selectPreset()
             if (!timerSub1) {
                 auto sub1 = [this] () {
                     int presetNo = ui->presetNo->text().toInt();
-                    if (presetNo <= MIN_PRESET_NO) return;
+                    if (presetNo <= settings.CAMERAS[camIndex].MIN_PRESET_NO) return;
                     ui->presetNo->setNum(presetNo-1);
                 };
                 timerSub1 = new QTimer (this);
@@ -153,7 +172,7 @@ void CVCPelcoD::selectPreset()
             if (!timerAdd10) {
                 auto add10 = [this] () {
                     int presetNo = ui->presetNo->text().toInt();
-                    if (presetNo > MAX_PRESET_NO-10) return;
+                    if (presetNo > settings.CAMERAS[camIndex].MAX_PRESET_NO-10) return;
                     ui->presetNo->setNum(presetNo+10);
                 };
                 timerAdd10 = new QTimer (this);
@@ -175,7 +194,7 @@ void CVCPelcoD::selectPreset()
             if (!timerSub10) {
                 auto sub10 = [this] () {
                     int presetNo = ui->presetNo->text().toInt();
-                    if (presetNo < MIN_PRESET_NO+10) return;
+                    if (presetNo < settings.CAMERAS[camIndex].MIN_PRESET_NO+10) return;
                     ui->presetNo->setNum(presetNo-10);
                 };
                 timerSub10 = new QTimer (this);
@@ -220,9 +239,12 @@ void CVCPelcoD::addCommandToQueue(const std::function<bool()>& f)
 
 void CVCPelcoD::zoomCam()
 {
+    if (settings.CAMERAS.empty()) return;
     if (is_zoom_in_queue) return;
     auto zoomFn = [this] () -> bool {
         is_zoom_in_queue = false;
+        unsigned MAX_ZOOM_SPEED = settings.CAMERAS[camIndex].MAX_ZOOM_SPEED;
+        unsigned MIN_ZOOM_SPEED = settings.CAMERAS[camIndex].MIN_ZOOM_SPEED;
         unsigned zoomSpeedRange = MAX_ZOOM_SPEED - MIN_ZOOM_SPEED + 1;
         double zoomIn  = gamepad->buttonR2();
         double zoomOut = gamepad->buttonL2();
@@ -234,26 +256,26 @@ void CVCPelcoD::zoomCam()
         int newZoomSpeed = MIN_ZOOM_SPEED + static_cast<int>(zoomSpeed * zoomSpeedRange + 0.5) - 1;
         if (newZoomSpeed < MIN_ZOOM_SPEED) newZoomSpeed = MIN_ZOOM_SPEED;
 
-        if (camId != prevCam || newZoomSpeed != prevZoomSpeed || zoomValue != prevZoomValue) {
-            //if (isManualFocus[camId]) {
-                //viscaAutoFocus(camId);
-                //isManualFocus[camId] = false;
+        if (camIndex != prevCam || newZoomSpeed != prevZoomSpeed || zoomValue != prevZoomValue) {
+            //if (isManualFocus[camIndex]) {
+                //cameraConnect[camIndex]->viscaAutoFocus();
+                //isManualFocus[camIndex] = false;
             //}
 
             if (zoomValue > 0) {
-                viscaIn (camId, newZoomSpeed);
+                cameraConnect[camIndex]->viscaIn (newZoomSpeed);
                 ui->statusbar->showMessage(QString("Zoom In Speed: ") + QString::number(newZoomSpeed));
             } else if (zoomValue < 0) {
-                viscaOut (camId, newZoomSpeed);
+                cameraConnect[camIndex]->viscaOut (newZoomSpeed);
                 ui->statusbar->showMessage(QString("Zoom Out Speed: ") + QString::number(newZoomSpeed));
             } else {
-                viscaZoomStop (camId);
+                cameraConnect[camIndex]->viscaZoomStop ();
                 ui->statusbar->showMessage(QString("Stop Zoom"));
             }
             
             prevZoomValue = zoomValue;
             prevZoomSpeed = newZoomSpeed;
-            prevCam = camId;
+            prevCam = camIndex;
             return true;
         } else {
             return false;
@@ -266,12 +288,13 @@ void CVCPelcoD::zoomCam()
 
 void CVCPelcoD::focusCam()
 {
+    if (settings.CAMERAS.empty()) return;
     if (!is_manual_focus_in_queue) {
         is_manual_focus_in_queue = true;
         addCommandToQueue ([this] () -> bool {
             is_manual_focus_in_queue = false;
-            viscaManualFocus(camId);
-            isManualFocus[camId] = true;
+            cameraConnect[camIndex]->viscaManualFocus();
+            isManualFocus[camIndex] = true;
             return true;
         });
     }
@@ -285,17 +308,17 @@ void CVCPelcoD::focusCam()
             if (focusFar == focusNear) focusFar = focusNear = false;
             int focusValue = (focusFar? 1 : focusNear? -1 : 0);
 
-            if (camId != prevCam || focusValue != prevFocusValue) {
+            if (camIndex != prevCam || focusValue != prevFocusValue) {
                 if (focusFar) {
-                    viscaFar (camId, MIN_FOCUS_SPEED);
+                    cameraConnect[camIndex]->viscaFar (settings.CAMERAS[camIndex].MIN_FOCUS_SPEED);
                 } else if (focusNear) {
-                    viscaNear (camId, MIN_FOCUS_SPEED);
+                    cameraConnect[camIndex]->viscaNear (settings.CAMERAS[camIndex].MIN_FOCUS_SPEED);
                 } else {
-                    viscaZoomStop (camId);
+                    cameraConnect[camIndex]->viscaZoomStop ();
                 }
                 
                 prevFocusValue = focusValue;
-                prevCam = camId;
+                prevCam = camIndex;
                 return true;
             } else {
                 return false;
@@ -306,10 +329,15 @@ void CVCPelcoD::focusCam()
 
 void CVCPelcoD::ptzCam()
 {
+    if (settings.CAMERAS.empty()) return;
     if (!is_ptz_in_queue) {
         is_ptz_in_queue = true;
         addCommandToQueue ([this] () -> bool {
             is_ptz_in_queue = false;
+            unsigned MAX_PAN_SPEED = settings.CAMERAS[camIndex].MAX_PAN_SPEED;
+            unsigned MIN_PAN_SPEED = settings.CAMERAS[camIndex].MIN_PAN_SPEED;
+            unsigned MAX_TILT_SPEED = settings.CAMERAS[camIndex].MAX_TILT_SPEED;
+            unsigned MIN_TILT_SPEED = settings.CAMERAS[camIndex].MIN_TILT_SPEED;
             double moveX = gamepad->axisLeftX();
             double moveY = gamepad->axisLeftY();
             int newMoveX = (MAX_PAN_SPEED - MIN_PAN_SPEED + 1) * moveX;
@@ -332,11 +360,11 @@ void CVCPelcoD::ptzCam()
             }
 
             if (newMoveX == 0 && newMoveY == 0) {
-                if (isCamMoving[camId]) {
-                    viscaStop(camId);
+                if (isCamMoving[camIndex]) {
+                    cameraConnect[camIndex]->viscaStop();
                     ui->statusbar->showMessage("Move STOP");
-                    isCamMoving[camId] = false;
-                    prevCam = camId;
+                    isCamMoving[camIndex] = false;
+                    prevCam = camIndex;
                     prevX = newMoveX;
                     prevY = newMoveY;
                     return true;
@@ -344,24 +372,24 @@ void CVCPelcoD::ptzCam()
                     return false;
                 }
             } else {
-                if (camId != prevCam || newMoveX != prevX || newMoveY != prevY) {
+                if (camIndex != prevCam || newMoveX != prevX || newMoveY != prevY) {
                     if (!is_auto_focus_in_queue) {
                         is_auto_focus_in_queue = true;
                         addCommandToQueue ([this] () -> bool {
                             is_auto_focus_in_queue = false;
-                            if (isManualFocus[camId]) {
-                                viscaAutoFocus(camId);
-                                isManualFocus[camId] = false;
+                            if (isManualFocus[camIndex]) {
+                                cameraConnect[camIndex]->viscaAutoFocus();
+                                isManualFocus[camIndex] = false;
                                 return true;
                             } else {
                                 return false;
                             }
                         });
                     }
-                    viscaMove(camId, newMoveX, newMoveY);
+                    cameraConnect[camIndex]->viscaMove(newMoveX, newMoveY);
                     ui->statusbar->showMessage(QString("X Speed = ") + QString::number(newMoveX) + " Y Speed = " + QString::number(newMoveY));
-                    isCamMoving[camId] = true;
-                    prevCam = camId;
+                    isCamMoving[camIndex] = true;
+                    prevCam = camIndex;
                     prevX = newMoveX;
                     prevY = newMoveY;
                     return true;
@@ -376,13 +404,14 @@ void CVCPelcoD::ptzCam()
 
 void CVCPelcoD::callPreset(bool en)
 {
+    if (settings.CAMERAS.empty()) return;
     if (en) {
         if (!is_call_preset_in_queue) {
             is_call_preset_in_queue = true;
             addCommandToQueue ([this] () -> bool {
                 is_call_preset_in_queue = false;
                 int presetNo = ui->presetNo->text().toInt();
-                viscaGo(camId,presetNo);
+                cameraConnect[camIndex]->viscaGo(presetNo);
                 ui->statusbar->showMessage("CALL");
                 return true;
             });
@@ -392,13 +421,14 @@ void CVCPelcoD::callPreset(bool en)
 
 void CVCPelcoD::setPreset(bool en)
 {
+    if (settings.CAMERAS.empty()) return;
     if (en) {
         if (!is_set_preset_in_queue) {
             is_set_preset_in_queue = true;
             addCommandToQueue ([this] () -> bool {
                 is_set_preset_in_queue = false;
                 int presetNo = ui->presetNo->text().toInt();
-                viscaSet(camId,presetNo);
+                cameraConnect[camIndex]->viscaSet(presetNo);
                 ui->statusbar->showMessage("PRESET");
                 return true;
             });
@@ -494,7 +524,7 @@ void CVCPelcoD::selectOBSScene(uint_fast8_t sceneId, uint_fast8_t)
 void CVCPelcoD::switchOBSScene(bool en)
 {
     if (en) {
-        obsConnect->switchToScene(curScene+1, camId);
+        obsConnect->switchToScene(curScene+1, settings.CAMERAS.empty()? 0 : settings.CAMERAS[camIndex].CAMERA_ID);
     }
 }
 
