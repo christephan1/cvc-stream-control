@@ -20,13 +20,17 @@ SOURCES += \
     cvcpelcod.cpp \
     obsconnect.cpp \
     visca.cpp \
-    cvcsetting.cpp
+    cvcsetting.cpp \
+    streamdeckconnect.cpp \
+    streamdeckkey.cpp
 
 HEADERS += \
     cvcpelcod.h \
     visca.h \
     obsconnect.h \
-    cvcsetting.h
+    cvcsetting.h \
+    streamdeckconnect.h \
+    streamdeckkey.h
 
 FORMS += \
     cvcpelcod.ui

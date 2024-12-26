@@ -8,6 +8,7 @@
 #include "ui_cvcpelcod.h"
 #include "visca.h"
 #include "obsconnect.h"
+#include "streamdeckconnect.h"
 
 CVCPelcoD::CVCPelcoD(QWidget *parent)
     : QMainWindow(parent)
@@ -85,11 +86,41 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     obsConnect = new OBSConnect(settings.OBS);
     connect(obsConnect, &OBSConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
     connect(obsConnect, &OBSConnect::currentSceneChanged, this, &CVCPelcoD::selectOBSScene);
+
+    //Stream Deck
+    streamDeckConnect = new StreamDeckConnect(settings.STREAM_DECK, settings.CAMERAS);
+    connect(streamDeckConnect, &StreamDeckConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
+
+    connect(obsConnect, &OBSConnect::currentSceneChanged, streamDeckConnect, &StreamDeckConnect::setCurScene);
+    connect(streamDeckConnect, &StreamDeckConnect::sceneChanged, this, &CVCPelcoD::selectOBSScene);
+    connect(streamDeckConnect, &StreamDeckConnect::switchScene, this, [this]() {switchOBSScene(true);});
+
+    connect(obsConnect, &OBSConnect::studioModeChanged, streamDeckConnect, &StreamDeckConnect::setStudioMode);
+    connect(streamDeckConnect, &StreamDeckConnect::switchStudioMode, this, [this]() {switchOBSStudioMode(true);});
+
+    connect(streamDeckConnect, &StreamDeckConnect::selectCam, this, &CVCPelcoD::selectCam);
+    connect(streamDeckConnect, &StreamDeckConnect::prevCam, this, [this]() {selectPrevCam(true);});
+    connect(streamDeckConnect, &StreamDeckConnect::nextCam, this, [this]() {selectNextCam(true);});
+
+    connect(streamDeckConnect, &StreamDeckConnect::moveUp,    this, &CVCPelcoD::moveUp);
+    connect(streamDeckConnect, &StreamDeckConnect::moveDown,  this, &CVCPelcoD::moveDown);
+    connect(streamDeckConnect, &StreamDeckConnect::moveLeft,  this, &CVCPelcoD::moveLeft);
+    connect(streamDeckConnect, &StreamDeckConnect::moveRight, this, &CVCPelcoD::moveRight);
+    connect(streamDeckConnect, &StreamDeckConnect::zoomOut,   this, &CVCPelcoD::zoomOut);
+    connect(streamDeckConnect, &StreamDeckConnect::zoomIn,    this, &CVCPelcoD::zoomIn);
+    connect(streamDeckConnect, &StreamDeckConnect::ptzStop,   this, &CVCPelcoD::ptzStop);
+    connect(streamDeckConnect, &StreamDeckConnect::focusFar,  this, &CVCPelcoD::focusFar);
+    connect(streamDeckConnect, &StreamDeckConnect::focusNear, this, &CVCPelcoD::focusNear);
+    connect(streamDeckConnect, &StreamDeckConnect::focusAuto, this, &CVCPelcoD::focusAuto);
+
+    streamDeckConnect->setCamIndex(camIndex);
 }
 
 CVCPelcoD::~CVCPelcoD()
 {
     if(obsConnect) delete obsConnect;
+    //[TODO] this will call seg Fault
+    //if(streamDeckConnect) delete streamDeckConnect;
     delete ui;
 }
 
@@ -98,6 +129,7 @@ void CVCPelcoD::selectPrevCam(bool en)
     if (en) {
         if (!settings.CAMERAS.empty() && camIndex > 0) {
             ui->camNo->setNum(settings.CAMERAS[--camIndex].CAMERA_ID);
+            if(streamDeckConnect) streamDeckConnect->setCamIndex(camIndex);
         }
     }
 }
@@ -107,7 +139,16 @@ void CVCPelcoD::selectNextCam(bool en)
     if (en) {
         if (!settings.CAMERAS.empty() && camIndex < settings.CAMERAS.size()-1) {
             ui->camNo->setNum(settings.CAMERAS[++camIndex].CAMERA_ID);
+            if(streamDeckConnect) streamDeckConnect->setCamIndex(camIndex);
         }
+    }
+}
+
+void CVCPelcoD::selectCam(int camIndex_)
+{
+    if (camIndex_ >= 0 && camIndex_ < settings.CAMERAS.size()) {
+        ui->camNo->setNum(settings.CAMERAS[camIndex = camIndex_].CAMERA_ID);
+        if(streamDeckConnect) streamDeckConnect->setCamIndex(camIndex);
     }
 }
 
@@ -314,7 +355,7 @@ void CVCPelcoD::focusCam()
                 } else if (focusNear) {
                     cameraConnect[camIndex]->viscaNear (settings.CAMERAS[camIndex].MIN_FOCUS_SPEED);
                 } else {
-                    cameraConnect[camIndex]->viscaZoomStop ();
+                    cameraConnect[camIndex]->viscaFocusStop ();
                 }
                 
                 prevFocusValue = focusValue;
@@ -400,6 +441,127 @@ void CVCPelcoD::ptzCam()
             //ui->statusbar->showMessage(QString("MoveX = ") + QString::number(moveX) + " MoveY = " + QString::number(moveY));
         });
     }
+}
+
+void CVCPelcoD::moveUp()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaUp(7);
+        ui->statusbar->showMessage("Up");
+        return true;
+    });
+}
+
+void CVCPelcoD::moveDown()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaDown(7);
+        ui->statusbar->showMessage("Down");
+        return true;
+    });
+}
+
+void CVCPelcoD::moveLeft()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaLeft(7);
+        ui->statusbar->showMessage("Left");
+        return true;
+    });
+}
+
+void CVCPelcoD::moveRight()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaRight(7);
+        ui->statusbar->showMessage("Right");
+        return true;
+    });
+}
+
+void CVCPelcoD::zoomOut()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaOut(0);
+        ui->statusbar->showMessage("Out");
+        return true;
+    });
+}
+
+void CVCPelcoD::zoomIn()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaIn(0);
+        ui->statusbar->showMessage("In");
+        return true;
+    });
+}
+
+void CVCPelcoD::ptzStop()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaStop();
+        ui->statusbar->showMessage("Stop");
+        return true;
+    });
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaZoomStop();
+        ui->statusbar->showMessage("Stop");
+        return true;
+    });
+}
+
+void CVCPelcoD::focusFar()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaManualFocus();
+        return true;
+    });
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaFar (settings.CAMERAS[camIndex].MIN_FOCUS_SPEED);
+        ui->statusbar->showMessage("Far");
+        return true;
+    });
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaFocusStop();
+        return true;
+    });
+}
+
+void CVCPelcoD::focusNear()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaManualFocus();
+        return true;
+    });
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaNear (settings.CAMERAS[camIndex].MIN_FOCUS_SPEED);
+        ui->statusbar->showMessage("Near");
+        return true;
+    });
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaFocusStop();
+        return true;
+    });
+}
+
+void CVCPelcoD::focusAuto()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaAutoFocus();
+        ui->statusbar->showMessage("Auto Focus");
+        return true;
+    });
 }
 
 void CVCPelcoD::callPreset(bool en)

@@ -31,9 +31,23 @@ struct CameraSettings {
     unsigned MAX_PRESET_NO;
 };
 
+struct StreamDeckKeySettings {
+    enum class KeyFunction {
+        HOME
+    };
+
+};
+
+struct StreamDeckSettings {
+    QString  STREAM_DECK_HOST = "127.0.0.1";
+    uint16_t STREAM_DECK_PORT = 9387;
+
+};
+
 struct CVCSettings {
     OBSSettings OBS;
     std::vector<CameraSettings> CAMERAS;
+    StreamDeckSettings STREAM_DECK;
 
     void parseJSON(const QString& filename); //throw exception when error
 };

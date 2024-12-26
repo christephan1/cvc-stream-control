@@ -25,5 +25,31 @@
         <file>icon/99D_Custom.png</file>
         <file>icon/99E_Custom.png</file>
         <file>icon/MainWindow.png</file>
+        <file>icon/Home_D.png</file>
+        <file>icon/Home_E.png</file>
+        <file>icon/Util_D.png</file>
+        <file>icon/Util_E.png</file>
+        <file>icon/StudioMode_D.png</file>
+        <file>icon/StudioMode_E.png</file>
+        <file>icon/Tally_D.png</file>
+        <file>icon/Tally_E.png</file>
+        <file>icon/Tally_P.png</file>
+        <file>icon/Switch_Tally_D.png</file>
+        <file>icon/Switch_Tally_E.png</file>
+        <file>icon/Switch_Tally_P.png</file>
+        <file>icon/NextCam_D.png</file>
+        <file>icon/NextCam_E.png</file>
+        <file>icon/PrevCam_D.png</file>
+        <file>icon/PrevCam_E.png</file>
+        <file>icon/Move_Up.png</file>
+        <file>icon/Move_Down.png</file>
+        <file>icon/Move_Left.png</file>
+        <file>icon/Move_Right.png</file>
+        <file>icon/Zoom_In.png</file>
+        <file>icon/Zoom_Out.png</file>
+        <file>icon/PTZ_Stop_E.png</file>
+        <file>icon/FocusFar.png</file>
+        <file>icon/FocusNear.png</file>
+        <file>icon/FocusAuto.png</file>
     </qresource>
 </RCC>

@@ -26,6 +26,7 @@ class OBSConnect : public QWebSocket {
     signals:
         void updateStatus(const QString& msg);
         void currentSceneChanged(uint_fast8_t sceneId, uint_fast8_t camId);
+        void studioModeChanged(bool en);
 
     private:
         void connectOBS();
@@ -44,7 +45,6 @@ class OBSConnect : public QWebSocket {
     private:
         const OBSSettings& settings;
 
-        bool isConnected = false;
         std::map<uint_fast8_t, std::map<uint_fast8_t, QString>> sceneMap; //sceneId->camId->sceneName
         bool isStudioMode = false;
 };

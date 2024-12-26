@@ -21,7 +21,6 @@ OBSConnect::OBSConnect(const OBSSettings& obsSettings)
 
 void OBSConnect::connectOBS()
 {
-    isConnected = false;
     QTimer::singleShot( 5000, this, [this] () {
         QUrl url;
         url.setScheme("ws");
@@ -67,7 +66,6 @@ void OBSConnect::processOBSMsg(const QString& msg)
                         {"rpcVersion", 1},
                         {"eventSubscriptions", 4 | 1024} //4 - Scenes Events, 1024 - UI Events
                     });
-                isConnected = false;
                 emit updateStatus("OBS connecting..");
                 break;
             }
@@ -76,7 +74,6 @@ void OBSConnect::processOBSMsg(const QString& msg)
             {
                 sendRequest("GetStudioModeEnabled");
                 sendRequest("GetSceneList");
-                isConnected = true;
                 emit updateStatus("OBS connected.");
                 break;
             }
@@ -92,6 +89,7 @@ void OBSConnect::processOBSMsg(const QString& msg)
 
                 } else if (eventType == "StudioModeStateChanged") {
                     isStudioMode = json["d"]["eventData"]["studioModeEnabled"].toBool();
+                    emit studioModeChanged(isStudioMode);
 
                 } else if (eventType == "SceneCreated") {
                     createScene(json["d"]["eventData"]["sceneName"].toString());
@@ -126,6 +124,7 @@ void OBSConnect::processOBSMsg(const QString& msg)
 
                 } else if (json["d"]["requestType"].toString() == "GetStudioModeEnabled") {
                     isStudioMode = json["d"]["responseData"]["studioModeEnabled"].toBool();
+                    emit studioModeChanged(isStudioMode);
                 }
                 break;
             }

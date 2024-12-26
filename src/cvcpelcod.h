@@ -22,6 +22,7 @@ QT_END_NAMESPACE
 
 class OBSConnect;
 class CameraConnect;
+class StreamDeckConnect;
 
 class CVCPelcoD : public QMainWindow
 {
@@ -34,6 +35,7 @@ public:
 private slots:
     void selectPrevCam(bool en);
     void selectNextCam(bool en);
+    void selectCam(int camIndex);
     void selectPreset();
     void callPreset(bool en);
     void setPreset(bool en);
@@ -50,12 +52,25 @@ private slots:
     void zoomCam();
     void focusCam();
 
+    //stream deck ptz commands
+    void moveUp();
+    void moveDown();
+    void moveLeft();
+    void moveRight();
+    void zoomOut();
+    void zoomIn();
+    void ptzStop();
+    void focusFar();
+    void focusNear();
+    void focusAuto();
+
     void execNextCommand();
 
 private:
     Ui::CVCPelcoD *ui;
     QGamepad *gamepad = nullptr;
     OBSConnect *obsConnect = nullptr;
+    StreamDeckConnect *streamDeckConnect = nullptr;
     CVCSettings settings;
 
     std::array<QPushButton*,11> obsScene;
