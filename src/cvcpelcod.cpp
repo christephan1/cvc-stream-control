@@ -113,6 +113,9 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::focusNear, this, &CVCPelcoD::focusNear);
     connect(streamDeckConnect, &StreamDeckConnect::focusAuto, this, &CVCPelcoD::focusAuto);
 
+    connect(streamDeckConnect, &StreamDeckConnect::callPreset, this, &CVCPelcoD::callPresetByNo);
+    connect(streamDeckConnect, &StreamDeckConnect::setPreset,  this, &CVCPelcoD::setPresetByNo);
+
     streamDeckConnect->setCamIndex(camIndex);
 }
 
@@ -596,6 +599,26 @@ void CVCPelcoD::setPreset(bool en)
             });
         }
     }
+}
+
+void CVCPelcoD::callPresetByNo(unsigned presetNo)
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this, presetNo] () -> bool {
+        cameraConnect[camIndex]->viscaGo(presetNo);
+        ui->statusbar->showMessage("CALL " + QString::number(presetNo));
+        return true;
+    });
+}
+
+void CVCPelcoD::setPresetByNo(unsigned presetNo)
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this, presetNo] () -> bool {
+        cameraConnect[camIndex]->viscaSet(presetNo);
+        ui->statusbar->showMessage("PRESET " + QString::number(presetNo));
+        return true;
+    });
 }
 
 void CVCPelcoD::selectPrevOBSScene(bool en)

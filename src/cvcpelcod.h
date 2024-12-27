@@ -52,7 +52,7 @@ private slots:
     void zoomCam();
     void focusCam();
 
-    //stream deck ptz commands
+    //stream deck commands - No cache
     void moveUp();
     void moveDown();
     void moveLeft();
@@ -63,6 +63,8 @@ private slots:
     void focusFar();
     void focusNear();
     void focusAuto();
+    void callPresetByNo(unsigned presetNo);
+    void setPresetByNo(unsigned presetNo);
 
     void execNextCommand();
 

@@ -50,6 +50,9 @@ void StreamDeckConnect::onDisconnect()
     focusFarKey = nullptr;
     focusNearKey = nullptr;
     focusAutoKey = nullptr;
+    presetKeyMap = {};
+    prevPresetKey = nullptr;
+    nextPresetKey = nullptr;
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -72,7 +75,7 @@ void StreamDeckConnect::sendRequest(const char* event, QJsonObject&& payload)
 
 void StreamDeckConnect::processStreamDeckMsg(const QString& msg)
 {
-    std::cout << "msg: " << msg.toStdString() << std::endl;
+    //std::cout << "msg: " << msg.toStdString() << std::endl;
     QJsonDocument json = QJsonDocument::fromJson(msg.toUtf8());
     if (json.isNull()) return;
 
@@ -152,12 +155,13 @@ void StreamDeckConnect::createKeyHandlers()
 
 #define DEFINE_TALLY(p,r,c,imgD,imgE,imgP,camId,isActive,isPreview) \
     key[p][r][c] = new StreamDeckKey_Tally(this, deckId, p,r,c, QImage(QString::fromUtf8(imgD)),QImage(QString::fromUtf8(imgE)),QImage(QString::fromUtf8(imgP)),camId,isActive,isPreview)
+#define DEFINE_PRESET(p,r,c,img,presetId,isEnable) static_cast<StreamDeckKey_Preset*>(key[p][r][c] = new StreamDeckKey_Preset(this,deckId,p,r,c,QImage(QString::fromUtf8(img)),presetId,isEnable))
 
     // page 0
     // left pane
     DEFINE_KEY(0,0,0, ":/icon/icon/Home_E.png");
     DEFINE_KEY(0,1,0, ":/icon/icon/Util_D.png");
-    connect(key[0][1][0], &StreamDeckKey::keyDown, this, [this](){ setPage(2); });
+    connect(key[0][1][0], &StreamDeckKey::keyUp, this, [this](){ setPage(2); });
     studioModeKey = DEFINE_SWITCH(0,3,0, ":/icon/icon/StudioMode_D.png", ":/icon/icon/StudioMode_E.png", isStudioMode);
     connect(studioModeKey, &StreamDeckKey::keyDown, this, [this](){ emit switchStudioMode(); });
     clearButton(0,2,0);
@@ -190,7 +194,7 @@ void StreamDeckConnect::createKeyHandlers()
         if (i < CAMERAS.size()) {
             auto theKey = DEFINE_TALLY(0,3,i+1, ":/icon/icon/Tally_D.png", ":/icon/icon/Tally_E.png", ":/icon/icon/Tally_P.png", CAMERAS[i].CAMERA_ID, curCamIndex==i, camIndex==i);
             cameraKeyMap.push_back(static_cast<StreamDeckKey_Tally*>(theKey));
-            connect(theKey, &StreamDeckKey::keyDown, this, [this, i](){ emit selectCam(i); setPage(1); });
+            connect(theKey, &StreamDeckKey::keyUp, this, [this, i](){ emit selectCam(i); setPage(1); });
         } else {
             clearButton(0,3,i+1);
         }
@@ -200,8 +204,8 @@ void StreamDeckConnect::createKeyHandlers()
     // left pane
     DEFINE_KEY(1,0,0, ":/icon/icon/Home_D.png");
     DEFINE_KEY(1,1,0, ":/icon/icon/Util_D.png");
-    connect(key[1][0][0], &StreamDeckKey::keyDown, this, [this](){ setPage(0); });
-    connect(key[1][1][0], &StreamDeckKey::keyDown, this, [this](){ setPage(2); });
+    connect(key[1][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
+    connect(key[1][1][0], &StreamDeckKey::keyUp, this, [this](){ setPage(2); });
 
     // camera switching area
     int camId = camIndex>=0 && camIndex<CAMERAS.size()? CAMERAS[camIndex].CAMERA_ID : -1;
@@ -237,10 +241,31 @@ void StreamDeckConnect::createKeyHandlers()
     connect(focusNearKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::focusNear);
     connect(focusAutoKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::focusAuto);
 
+    // camera preset area
+    for (size_t i = 0; i < 15; i ++) {
+        presetKeyMap[i] = DEFINE_PRESET(1,i/4,i%4+1, ":/icon/icon/Preset.png", minPresetNo+i, i<nPresetNo);
+        connect(presetKeyMap[i], &StreamDeckKey::keyUp, this,
+            [this, i]() {
+                unsigned thisPresetNo = curFirstPreset + i;
+                if (thisPresetNo >= minPresetNo && thisPresetNo+1 < minPresetNo+nPresetNo)
+                    emit callPreset(thisPresetNo);
+            });
+        connect(presetKeyMap[i], &StreamDeckKey_LongPress::longPressed, this,
+            [this, i]() {
+                unsigned thisPresetNo = curFirstPreset + i;
+                if (thisPresetNo >= minPresetNo && thisPresetNo+1 < minPresetNo+nPresetNo)
+                    emit setPreset(thisPresetNo);
+            });
+    }
+    prevPresetKey = DEFINE_SWITCH(1,3,0,":/icon/icon/PrevPreset_D.png",":/icon/icon/PrevPreset_E.png",false);
+    nextPresetKey = DEFINE_SWITCH(1,3,4,":/icon/icon/NextPreset_D.png",":/icon/icon/NextPreset_E.png",nPresetNo>15);
+    connect(prevPresetKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::presetPrevPage);
+    connect(nextPresetKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::presetNextPage);
+
     // page 2
     DEFINE_KEY(2,0,0, ":/icon/icon/Home_D.png");
     DEFINE_KEY(2,1,0, ":/icon/icon/Util_E.png");
-    connect(key[2][0][0], &StreamDeckKey::keyDown, this, [this](){ setPage(0); });
+    connect(key[2][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
 
 #undef DEFINE_KEY
 #undef DEFINE_SCENE
@@ -250,6 +275,43 @@ void StreamDeckConnect::createKeyHandlers()
             for (StreamDeckKey*& keyPtr : row)
                 if (keyPtr)
                     keyPtr->updateButton();
+
+    setPage(0);
+}
+
+void StreamDeckConnect::updatePresetKeys()
+{
+    if (camIndex >= 0 && camIndex < CAMERAS.size()) {
+        minPresetNo = CAMERAS[camIndex].MIN_PRESET_NO;
+        nPresetNo = CAMERAS[camIndex].MAX_PRESET_NO - minPresetNo + 1;
+        if (curFirstPreset < minPresetNo) curFirstPreset = minPresetNo;
+        if (curFirstPreset+1 > minPresetNo+nPresetNo) curFirstPreset = nPresetNo > 15? minPresetNo+nPresetNo-15 : minPresetNo;
+    } else {
+        minPresetNo = 0;
+        nPresetNo = 0;
+    }
+    for (size_t i = 0; i < 15; i ++) {
+        unsigned thisPreset = curFirstPreset + i;
+        presetKeyMap[i]->setPresetNo(thisPreset, thisPreset >= minPresetNo && thisPreset < minPresetNo + nPresetNo);
+    }
+    prevPresetKey->setEnable(curFirstPreset > minPresetNo);
+    nextPresetKey->setEnable(curFirstPreset+15 < minPresetNo+nPresetNo);
+}
+
+void StreamDeckConnect::presetPrevPage()
+{
+    if (curFirstPreset > minPresetNo + 15) {
+        curFirstPreset -= 15;
+    } else {
+        curFirstPreset = minPresetNo;
+    }
+    updatePresetKeys();
+}
+
+void StreamDeckConnect::presetNextPage()
+{
+    if (curFirstPreset+15 < minPresetNo+nPresetNo) curFirstPreset += 15;
+    updatePresetKeys();
 }
 
 void StreamDeckConnect::setCurScene(uint_fast8_t scene, int camId)

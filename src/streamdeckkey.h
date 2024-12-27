@@ -35,6 +35,34 @@ class StreamDeckKey : public QObject {
         QImage image;
 };
 
+class StreamDeckKey_LongPress : public StreamDeckKey {
+    Q_OBJECT
+    public:
+        StreamDeckKey_LongPress(StreamDeckConnect* owner,
+                const QString& deckId_, int page_, int row_, int column_,
+                QImage&& icon, QImage&& iconLongPress);
+        virtual ~StreamDeckKey_LongPress() {}
+
+    signals:
+        void longPressed();
+
+    private slots:
+        void detectLongPress_onKeyDown();
+        void detectLongPress_onKeyUp();
+
+    public:
+        void updateButton() override;
+
+    protected:
+        bool isLongPressed() const { return _longPressed; }
+
+    private:
+        QImage imageLongPress;
+        bool _longPressed = false;
+        QTimer* timingLongPress = nullptr;
+
+};
+
 class StreamDeckKey_Switch : public StreamDeckKey {
     Q_OBJECT
     public:
@@ -84,5 +112,24 @@ class StreamDeckKey_Tally : public StreamDeckKey {
         bool isActive, isPreview;
 
         QImage imageD, imageE, imageP;
+};
+
+class StreamDeckKey_Preset : public StreamDeckKey_LongPress {
+    Q_OBJECT
+    public:
+        StreamDeckKey_Preset(
+                StreamDeckConnect* owner,
+                const QString& deckId_, int page_, int row_, int column_,
+                QImage&& icon, unsigned presetNo, bool isEnable);
+        virtual ~StreamDeckKey_Preset() {}
+
+        void updateButton() override;
+
+        void setPresetNo(unsigned presetNo, bool isEnable);
+
+    private:
+        unsigned presetNo;
+        bool isEnable;
+        QImage image;
 };
 

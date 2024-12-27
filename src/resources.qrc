@@ -51,5 +51,10 @@
         <file>icon/FocusFar.png</file>
         <file>icon/FocusNear.png</file>
         <file>icon/FocusAuto.png</file>
+        <file>icon/Preset.png</file>
+        <file>icon/NextPreset_D.png</file>
+        <file>icon/NextPreset_E.png</file>
+        <file>icon/PrevPreset_D.png</file>
+        <file>icon/PrevPreset_E.png</file>
     </qresource>
 </RCC>

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <array>
 #include <vector>
 #include <QWebSocket>
 #include <QJsonValue>
@@ -14,6 +15,8 @@ class StreamDeckKey;
 class StreamDeckKey_Switch;
 class StreamDeckKey_Scene;
 class StreamDeckKey_Tally;
+class StreamDeckKey_LongPress;
+class StreamDeckKey_Preset;
 
 class StreamDeckConnect : public QWebSocket {
     Q_OBJECT
@@ -42,6 +45,10 @@ class StreamDeckConnect : public QWebSocket {
         void focusNear();
         void focusAuto();
 
+        //preset signals
+        void callPreset(unsigned presetNo);
+        void setPreset(unsigned presetNo);
+
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);
         void setCamIndex(int cam);
@@ -54,6 +61,8 @@ class StreamDeckConnect : public QWebSocket {
         friend StreamDeckKey;
         friend StreamDeckKey_Switch;
         friend StreamDeckKey_Tally;
+        friend StreamDeckKey_LongPress;
+        friend StreamDeckKey_Preset;
         void sendRequest(const char* event, QJsonObject&& payload = QJsonObject());
         void setPage(int page);
         void clearButton(int page, int row, int column);
@@ -61,6 +70,8 @@ class StreamDeckConnect : public QWebSocket {
     private slots:
         void processStreamDeckMsg(const QString& msg);
         void onDisconnect();
+        void presetPrevPage();
+        void presetNextPage();
 
     private:
         const StreamDeckSettings& settings;
@@ -97,5 +108,14 @@ class StreamDeckConnect : public QWebSocket {
         StreamDeckKey* focusFarKey = nullptr;
         StreamDeckKey* focusNearKey = nullptr;
         StreamDeckKey* focusAutoKey = nullptr;
+
+        //preset keys
+        unsigned minPresetNo = 0;
+        unsigned nPresetNo = 20;
+        unsigned curFirstPreset = 0;
+        std::array<StreamDeckKey_Preset*,15> presetKeyMap = {};
+        StreamDeckKey_Switch* prevPresetKey = nullptr;
+        StreamDeckKey_Switch* nextPresetKey = nullptr;
+        void updatePresetKeys();
 };
 
