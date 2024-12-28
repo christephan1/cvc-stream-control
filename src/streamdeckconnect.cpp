@@ -178,10 +178,10 @@ void StreamDeckConnect::createKeyHandlers()
     DEFINE_SCENE(0,1,2, ":/icon/icon/09D_SlideOnly.png", ":/icon/icon/09E_SlideOnly.png", 9);
     DEFINE_SCENE(0,1,3, ":/icon/icon/10D_Disable.png", ":/icon/icon/10E_Disable.png", 10);
     DEFINE_SCENE(0,1,4, ":/icon/icon/11D_Begin.png", ":/icon/icon/11E_Begin.png", 11);
-    clearButton(0,1,5);
-    clearButton(0,1,6);
-    clearButton(0,1,7);
-    clearButton(0,2,1);
+    DEFINE_SCENE(0,1,5, ":/icon/icon/12D_RightSlide169.png", ":/icon/icon/12E_RightSlide169.png", 12);
+    DEFINE_SCENE(0,1,6, ":/icon/icon/13D_LeftSlide169.png", ":/icon/icon/13E_LeftSlide169.png", 13);
+    DEFINE_SCENE(0,1,7, ":/icon/icon/14D_RightSlide43.png", ":/icon/icon/14E_RightSlide43.png", 14);
+    DEFINE_SCENE(0,2,1, ":/icon/icon/15D_LeftSlide43.png", ":/icon/icon/15E_LeftSlide43.png", 15);
     clearButton(0,2,2);
     clearButton(0,2,3);
     clearButton(0,2,4);

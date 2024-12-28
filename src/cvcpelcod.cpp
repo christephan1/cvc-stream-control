@@ -386,19 +386,19 @@ void CVCPelcoD::ptzCam()
             double moveY = gamepad->axisLeftY();
             int newMoveX = (MAX_PAN_SPEED - MIN_PAN_SPEED + 1) * moveX;
             int newMoveY = (MAX_TILT_SPEED - MIN_TILT_SPEED + 1) * moveY;
-            if (moveX > 0) {
+            if (newMoveX > 0) {
                 newMoveX += MIN_PAN_SPEED - 1;
                 if (newMoveX < MIN_PAN_SPEED) newMoveX = MIN_PAN_SPEED;
             }
-            if (moveY > 0) {
+            if (newMoveY > 0) {
                 newMoveY += MIN_TILT_SPEED - 1;
                 if (newMoveY < MIN_TILT_SPEED) newMoveY = MIN_TILT_SPEED;
             }
-            if (moveX < 0) {
+            if (newMoveX < 0) {
                 newMoveX -= MIN_PAN_SPEED - 1;
                 if (newMoveX > -MIN_PAN_SPEED) newMoveX = -MIN_PAN_SPEED;
             }
-            if (moveY < 0) {
+            if (newMoveY < 0) {
                 newMoveY -= MIN_TILT_SPEED - 1;
                 if (newMoveY > -MIN_TILT_SPEED) newMoveY = -MIN_TILT_SPEED;
             }
