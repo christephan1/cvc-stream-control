@@ -31,8 +31,12 @@ class CameraConnect : public QUdpSocket {
         void viscaOn ();
         void viscaOff ();
         void viscaMenu ();
-        void viscaEnter ();
-        void viscaReturn ();
+        void viscaMenuUp ();
+        void viscaMenuDown ();
+        void viscaMenuLeft ();
+        void viscaMenuRight ();
+        void viscaMenuEnter ();
+        void viscaMenuBack ();
 
     private:
         const CameraSettings& settings;

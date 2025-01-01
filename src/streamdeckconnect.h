@@ -50,6 +50,17 @@ class StreamDeckConnect : public QWebSocket {
         void callPreset(unsigned presetNo);
         void setPreset(unsigned presetNo);
 
+        //menu signals
+        void menuPressed();
+        void menuUp();
+        void menuDown();
+        void menuLeft();
+        void menuRight();
+        void menuEnter();
+        void menuBack();
+        void camOn();
+        void camOff();
+
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);
         void setCamIndex(int cam);
@@ -91,9 +102,12 @@ class StreamDeckConnect : public QWebSocket {
         int camIndex = 0;    //Preview Cam
         std::map<uint_fast8_t, StreamDeckKey_Scene*> sceneKeyMap; //scene->key
         std::vector<StreamDeckKey_Tally*> cameraKeyMap; //camIndex->key
-        StreamDeckKey_Tally* switchCamKey = nullptr;
-        StreamDeckKey_Switch* prevCamKey = nullptr;
-        StreamDeckKey_Switch* nextCamKey = nullptr;
+        StreamDeckKey_Tally* switchCamKey1 = nullptr;
+        StreamDeckKey_Tally* switchCamKey2 = nullptr;
+        StreamDeckKey_Switch* prevCamKey1 = nullptr;
+        StreamDeckKey_Switch* prevCamKey2 = nullptr;
+        StreamDeckKey_Switch* nextCamKey1 = nullptr;
+        StreamDeckKey_Switch* nextCamKey2 = nullptr;
 
         bool isStudioMode = 0;
         StreamDeckKey_Switch* studioModeKey = nullptr;
@@ -118,5 +132,16 @@ class StreamDeckConnect : public QWebSocket {
         StreamDeckKey_Switch* prevPresetKey = nullptr;
         StreamDeckKey_Switch* nextPresetKey = nullptr;
         void updatePresetKeys();
+
+        //menu keys
+        StreamDeckKey* menuKey = nullptr;
+        StreamDeckKey* menuUpKey = nullptr;
+        StreamDeckKey* menuDownKey = nullptr;
+        StreamDeckKey* menuLeftKey = nullptr;
+        StreamDeckKey* menuRightKey = nullptr;
+        StreamDeckKey* menuEnterKey = nullptr;
+        StreamDeckKey* menuBackKey = nullptr;
+        StreamDeckKey* camOnKey = nullptr;
+        StreamDeckKey* camOffKey = nullptr;
 };
 

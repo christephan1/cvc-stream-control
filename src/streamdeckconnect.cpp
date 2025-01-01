@@ -37,9 +37,12 @@ void StreamDeckConnect::onDisconnect()
     sceneKeyMap.clear();
     cameraKeyMap.clear();
     studioModeKey = nullptr;
-    switchCamKey = nullptr;
-    prevCamKey = nullptr;
-    nextCamKey = nullptr;
+    switchCamKey1 = nullptr;
+    switchCamKey2 = nullptr;
+    prevCamKey1 = nullptr;
+    prevCamKey2 = nullptr;
+    nextCamKey1 = nullptr;
+    nextCamKey2 = nullptr;
     moveUpKey = nullptr;
     moveDownKey = nullptr;
     moveLeftKey = nullptr;
@@ -53,6 +56,15 @@ void StreamDeckConnect::onDisconnect()
     presetKeyMap = {};
     prevPresetKey = nullptr;
     nextPresetKey = nullptr;
+    menuKey = nullptr;
+    menuUpKey = nullptr;
+    menuDownKey = nullptr;
+    menuLeftKey = nullptr;
+    menuRightKey = nullptr;
+    menuEnterKey = nullptr;
+    menuBackKey = nullptr;
+    camOnKey = nullptr;
+    camOffKey = nullptr;
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -154,7 +166,7 @@ void StreamDeckConnect::createKeyHandlers()
         });
 
 #define DEFINE_TALLY(p,r,c,imgD,imgE,imgP,camId,isActive,isPreview) \
-    key[p][r][c] = new StreamDeckKey_Tally(this, deckId, p,r,c, QImage(QString::fromUtf8(imgD)),QImage(QString::fromUtf8(imgE)),QImage(QString::fromUtf8(imgP)),camId,isActive,isPreview)
+    static_cast<StreamDeckKey_Tally*>(key[p][r][c] = new StreamDeckKey_Tally(this, deckId, p,r,c, QImage(QString::fromUtf8(imgD)),QImage(QString::fromUtf8(imgE)),QImage(QString::fromUtf8(imgP)),camId,isActive,isPreview))
 #define DEFINE_PRESET(p,r,c,img,presetId,isEnable) static_cast<StreamDeckKey_Preset*>(key[p][r][c] = new StreamDeckKey_Preset(this,deckId,p,r,c,QImage(QString::fromUtf8(img)),presetId,isEnable))
 
     // page 0
@@ -193,7 +205,7 @@ void StreamDeckConnect::createKeyHandlers()
     for (int i = 0; i < 7; i++) {
         if (i < CAMERAS.size()) {
             auto theKey = DEFINE_TALLY(0,3,i+1, ":/icon/icon/Tally_D.png", ":/icon/icon/Tally_E.png", ":/icon/icon/Tally_P.png", CAMERAS[i].CAMERA_ID, curCamIndex==i, camIndex==i);
-            cameraKeyMap.push_back(static_cast<StreamDeckKey_Tally*>(theKey));
+            cameraKeyMap.push_back(theKey);
             connect(theKey, &StreamDeckKey::keyUp, this, [this, i](){ emit selectCam(i); setPage(1); });
         } else {
             clearButton(0,3,i+1);
@@ -209,14 +221,22 @@ void StreamDeckConnect::createKeyHandlers()
 
     // camera switching area
     int camId = camIndex>=0 && camIndex<CAMERAS.size()? CAMERAS[camIndex].CAMERA_ID : -1;
-    switchCamKey = static_cast<StreamDeckKey_Tally*> (DEFINE_TALLY(1,0,6,
+    switchCamKey1 = static_cast<StreamDeckKey_Tally*> (DEFINE_TALLY(1,0,6,
             ":/icon/icon/Switch_Tally_D.png", ":/icon/icon/Switch_Tally_E.png", ":/icon/icon/Switch_Tally_P.png",
             camId, camId==curCamIndex, camId >= 0));
-    connect(switchCamKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::switchScene);;
-    prevCamKey = DEFINE_SWITCH(1,0,5,":/icon/icon/PrevCam_D.png",":/icon/icon/PrevCam_E.png",camIndex > 0);
-    nextCamKey = DEFINE_SWITCH(1,0,7,":/icon/icon/NextCam_D.png",":/icon/icon/NextCam_E.png",camIndex >= 0 && camIndex<CAMERAS.size()-1);
-    connect(prevCamKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::prevCam);
-    connect(nextCamKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::nextCam);
+    switchCamKey2 = static_cast<StreamDeckKey_Tally*> (DEFINE_TALLY(2,0,6,
+            ":/icon/icon/Tally_D.png", ":/icon/icon/Tally_E.png", ":/icon/icon/Tally_P.png",
+            camId, camId==curCamIndex, camId >= 0));
+    connect(switchCamKey1, &StreamDeckKey::keyDown, this, &StreamDeckConnect::switchScene);;
+    connect(switchCamKey2, &StreamDeckKey::keyDown, this, &StreamDeckConnect::switchScene);;
+    prevCamKey1 = DEFINE_SWITCH(1,0,5,":/icon/icon/PrevCam_D.png",":/icon/icon/PrevCam_E.png",camIndex > 0);
+    prevCamKey2 = DEFINE_SWITCH(2,0,5,":/icon/icon/PrevCam_D.png",":/icon/icon/PrevCam_E.png",camIndex > 0);
+    nextCamKey1 = DEFINE_SWITCH(1,0,7,":/icon/icon/NextCam_D.png",":/icon/icon/NextCam_E.png",camIndex >= 0 && camIndex<CAMERAS.size()-1);
+    nextCamKey2 = DEFINE_SWITCH(2,0,7,":/icon/icon/NextCam_D.png",":/icon/icon/NextCam_E.png",camIndex >= 0 && camIndex<CAMERAS.size()-1);
+    connect(prevCamKey1, &StreamDeckKey::keyDown, this, &StreamDeckConnect::prevCam);
+    connect(prevCamKey2, &StreamDeckKey::keyDown, this, &StreamDeckConnect::prevCam);
+    connect(nextCamKey1, &StreamDeckKey::keyDown, this, &StreamDeckConnect::nextCam);
+    connect(nextCamKey2, &StreamDeckKey::keyDown, this, &StreamDeckConnect::nextCam);
 
     // camera PTZ area
     moveUpKey    = DEFINE_KEY(1,1,6, ":/icon/icon/Move_Up.png");
@@ -225,7 +245,7 @@ void StreamDeckConnect::createKeyHandlers()
     moveRightKey = DEFINE_KEY(1,2,7, ":/icon/icon/Move_Right.png");
     zoomOutKey   = DEFINE_KEY(1,3,5, ":/icon/icon/Zoom_Out.png");
     zoomInKey    = DEFINE_KEY(1,3,7, ":/icon/icon/Zoom_In.png");
-    ptzStopKey   = DEFINE_KEY(1,2,6, ":/icon/icon/PTZ_Stop_E.png"); //[TODO] long press
+    ptzStopKey   = DEFINE_KEY(1,2,6, ":/icon/icon/PTZ_Stop_E.png");
     connect(moveUpKey,    &StreamDeckKey::keyDown, this, &StreamDeckConnect::moveUp);
     connect(moveDownKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::moveDown);
     connect(moveLeftKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::moveLeft);
@@ -269,8 +289,31 @@ void StreamDeckConnect::createKeyHandlers()
     DEFINE_KEY(2,1,0, ":/icon/icon/Util_E.png");
     connect(key[2][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
 
+    // menu area
+    menuKey      = DEFINE_KEY(2,1,7, ":/icon/icon/Cam_Menu.png");
+    menuUpKey    = DEFINE_KEY(2,1,6, ":/icon/icon/Move_Up.png");
+    menuDownKey  = DEFINE_KEY(2,3,6, ":/icon/icon/Move_Down.png");
+    menuLeftKey  = DEFINE_KEY(2,2,5, ":/icon/icon/Move_Left.png");
+    menuRightKey = DEFINE_KEY(2,2,7, ":/icon/icon/Move_Right.png");
+    menuEnterKey = DEFINE_KEY(2,2,6, ":/icon/icon/Cam_Menu_Enter.png");
+    menuBackKey  = DEFINE_KEY(2,1,5, ":/icon/icon/Cam_Menu_Back.png");
+    camOnKey     = DEFINE_KEY(2,3,5, ":/icon/icon/Cam_On.png");
+    camOffKey    = DEFINE_KEY(2,3,7, ":/icon/icon/Cam_Off.png");
+    connect(menuKey,      &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuPressed);
+    connect(menuUpKey,    &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuUp);
+    connect(menuDownKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuDown);
+    connect(menuLeftKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuLeft);
+    connect(menuRightKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuRight);
+    connect(menuEnterKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuEnter);
+    connect(menuBackKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuBack);
+    connect(camOnKey,     &StreamDeckKey::keyDown, this, &StreamDeckConnect::camOn);
+    connect(camOffKey,    &StreamDeckKey::keyDown, this, &StreamDeckConnect::camOff);
+
 #undef DEFINE_KEY
+#undef DEFINE_SWITCH
 #undef DEFINE_SCENE
+#undef DEFINE_TALLY
+#undef DEFINE_PRESET
 
     for (auto& page : key)
         for (auto& row : page)
@@ -330,8 +373,10 @@ void StreamDeckConnect::setCurScene(uint_fast8_t scene, int camId)
     if (curCamIndex < 0 || curCamIndex >= CAMERAS.size() || camId != CAMERAS[curCamIndex].CAMERA_ID) {
         if (curCamIndex >= 0 && curCamIndex < cameraKeyMap.size())
             cameraKeyMap[curCamIndex]->setActive(false);
-        if (curCamIndex == camIndex)
-            if (switchCamKey) switchCamKey->setActive(false);
+        if (curCamIndex == camIndex) {
+            if (switchCamKey1) switchCamKey1->setActive(false);
+            if (switchCamKey2) switchCamKey2->setActive(false);
+        }
         curCamIndex = -1;
         //[TODO] Use better algorithm when number of cameras increases.
         for (size_t i = 0; i < CAMERAS.size(); i++) {
@@ -339,8 +384,10 @@ void StreamDeckConnect::setCurScene(uint_fast8_t scene, int camId)
                 curCamIndex = i;
                 if (curCamIndex >= 0 && curCamIndex < cameraKeyMap.size())
                     cameraKeyMap[curCamIndex]->setActive(true);
-                if (curCamIndex >= 0 && curCamIndex == camIndex)
-                    if (switchCamKey) switchCamKey->setActive(true);
+                if (curCamIndex >= 0 && curCamIndex == camIndex) {
+                    if (switchCamKey1) switchCamKey1->setActive(true);
+                    if (switchCamKey2) switchCamKey2->setActive(true);
+                }
                 break;
             }
         }
@@ -352,8 +399,10 @@ void StreamDeckConnect::setCamIndex(int cam)
     if (cam == camIndex) return;
 
     // update prev/next camera keys
-    if (prevCamKey) if ((camIndex > 0) != (cam > 0)) prevCamKey->setEnable(cam>0);
-    if (nextCamKey) if ((camIndex >= 0 && camIndex<CAMERAS.size()-1) != (cam>=0 && cam<CAMERAS.size()-1)) nextCamKey->setEnable(cam>=0 && cam<CAMERAS.size()-1);
+    if (prevCamKey1) if ((camIndex > 0) != (cam > 0)) prevCamKey1->setEnable(cam>0);
+    if (prevCamKey2) if ((camIndex > 0) != (cam > 0)) prevCamKey2->setEnable(cam>0);
+    if (nextCamKey1) if ((camIndex >= 0 && camIndex<CAMERAS.size()-1) != (cam>=0 && cam<CAMERAS.size()-1)) nextCamKey1->setEnable(cam>=0 && cam<CAMERAS.size()-1);
+    if (nextCamKey2) if ((camIndex >= 0 && camIndex<CAMERAS.size()-1) != (cam>=0 && cam<CAMERAS.size()-1)) nextCamKey2->setEnable(cam>=0 && cam<CAMERAS.size()-1);
     
     // update camera keys
     if (camIndex >= 0 && camIndex < cameraKeyMap.size())
@@ -361,9 +410,11 @@ void StreamDeckConnect::setCamIndex(int cam)
     camIndex = cam;
     if (camIndex >= 0 && camIndex < cameraKeyMap.size()) {
         cameraKeyMap[camIndex]->setPreview(true);
-        if (switchCamKey) switchCamKey->setCamId(CAMERAS[camIndex].CAMERA_ID, camIndex == curCamIndex, true);
+        if (switchCamKey1) switchCamKey1->setCamId(CAMERAS[camIndex].CAMERA_ID, camIndex == curCamIndex, true);
+        if (switchCamKey2) switchCamKey2->setCamId(CAMERAS[camIndex].CAMERA_ID, camIndex == curCamIndex, true);
     } else {
-        if (switchCamKey) switchCamKey->setCamId(-1, false, false);
+        if (switchCamKey1) switchCamKey1->setCamId(-1, false, false);
+        if (switchCamKey2) switchCamKey2->setCamId(-1, false, false);
     }
 }
 

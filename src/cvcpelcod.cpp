@@ -117,6 +117,16 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::callPreset, this, &CVCPelcoD::callPresetByNo);
     connect(streamDeckConnect, &StreamDeckConnect::setPreset,  this, &CVCPelcoD::setPresetByNo);
 
+    connect(streamDeckConnect, &StreamDeckConnect::menuPressed, this, &CVCPelcoD::menuPressed);
+    connect(streamDeckConnect, &StreamDeckConnect::menuUp,      this, &CVCPelcoD::menuUp);
+    connect(streamDeckConnect, &StreamDeckConnect::menuDown,    this, &CVCPelcoD::menuDown);
+    connect(streamDeckConnect, &StreamDeckConnect::menuLeft,    this, &CVCPelcoD::menuLeft);
+    connect(streamDeckConnect, &StreamDeckConnect::menuRight,   this, &CVCPelcoD::menuRight);
+    connect(streamDeckConnect, &StreamDeckConnect::menuEnter,   this, &CVCPelcoD::menuEnter);
+    connect(streamDeckConnect, &StreamDeckConnect::menuBack,    this, &CVCPelcoD::menuBack);
+    connect(streamDeckConnect, &StreamDeckConnect::camOn,       this, &CVCPelcoD::camOn);
+    connect(streamDeckConnect, &StreamDeckConnect::camOff,      this, &CVCPelcoD::camOff);
+
     streamDeckConnect->setCamIndex(camIndex);
 }
 
@@ -619,6 +629,96 @@ void CVCPelcoD::setPresetByNo(unsigned presetNo)
     addCommandToQueue ([this, presetNo] () -> bool {
         cameraConnect[camIndex]->viscaSet(presetNo);
         ui->statusbar->showMessage("PRESET " + QString::number(presetNo));
+        return true;
+    });
+}
+
+void CVCPelcoD::menuPressed()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenu();
+        ui->statusbar->showMessage("Menu");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuUp()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuUp();
+        ui->statusbar->showMessage("Menu Up");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuDown()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuDown();
+        ui->statusbar->showMessage("Menu Down");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuLeft()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuLeft();
+        ui->statusbar->showMessage("Menu Left");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuRight()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuRight();
+        ui->statusbar->showMessage("Menu Right");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuEnter()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuEnter();
+        ui->statusbar->showMessage("Menu Enter");
+        return true;
+    });
+}
+
+void CVCPelcoD::menuBack()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaMenuBack();
+        ui->statusbar->showMessage("Menu Back");
+        return true;
+    });
+}
+
+void CVCPelcoD::camOn()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaOn();
+        ui->statusbar->showMessage("Cam On");
+        return true;
+    });
+}
+
+void CVCPelcoD::camOff()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaOff();
+        ui->statusbar->showMessage("Cam Off");
         return true;
     });
 }

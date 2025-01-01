@@ -66,6 +66,15 @@ private slots:
     void focusAuto();
     void callPresetByNo(unsigned presetNo);
     void setPresetByNo(unsigned presetNo);
+    void menuPressed();
+    void menuUp();
+    void menuDown();
+    void menuLeft();
+    void menuRight();
+    void menuEnter();
+    void menuBack();
+    void camOn();
+    void camOff();
 
     void execNextCommand();
 

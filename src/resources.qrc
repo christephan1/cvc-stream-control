@@ -22,6 +22,14 @@
         <file>icon/10E_Disable.png</file>
         <file>icon/11D_Begin.png</file>
         <file>icon/11E_Begin.png</file>
+        <file>icon/12D_RightSlide169.png</file>
+        <file>icon/12E_RightSlide169.png</file>
+        <file>icon/13D_LeftSlide169.png</file>
+        <file>icon/13E_LeftSlide169.png</file>
+        <file>icon/14D_RightSlide43.png</file>
+        <file>icon/14E_RightSlide43.png</file>
+        <file>icon/15D_LeftSlide43.png</file>
+        <file>icon/15E_LeftSlide43.png</file>
         <file>icon/99D_Custom.png</file>
         <file>icon/99E_Custom.png</file>
         <file>icon/MainWindow.png</file>
@@ -56,13 +64,10 @@
         <file>icon/NextPreset_E.png</file>
         <file>icon/PrevPreset_D.png</file>
         <file>icon/PrevPreset_E.png</file>
-        <file>icon/12D_RightSlide169.png</file>
-        <file>icon/12E_RightSlide169.png</file>
-        <file>icon/13D_LeftSlide169.png</file>
-        <file>icon/13E_LeftSlide169.png</file>
-        <file>icon/14D_RightSlide43.png</file>
-        <file>icon/14E_RightSlide43.png</file>
-        <file>icon/15D_LeftSlide43.png</file>
-        <file>icon/15E_LeftSlide43.png</file>
+        <file>icon/Cam_Menu.png</file>
+        <file>icon/Cam_Menu_Enter.png</file>
+        <file>icon/Cam_Menu_Back.png</file>
+        <file>icon/Cam_On.png</file>
+        <file>icon/Cam_Off.png</file>
     </qresource>
 </RCC>

@@ -322,7 +322,27 @@ void CameraConnect::viscaMenu ()
     voiSend (cmd);
 }
 
-void CameraConnect::viscaEnter ()
+void CameraConnect::viscaMenuUp ()
+{
+    viscaUp(0x0E);
+}
+
+void CameraConnect::viscaMenuDown ()
+{
+    viscaDown(0x0E);
+}
+
+void CameraConnect::viscaMenuLeft ()
+{
+    viscaLeft(0x0E);
+}
+
+void CameraConnect::viscaMenuRight ()
+{
+    viscaRight(0x0E);
+}
+
+void CameraConnect::viscaMenuEnter ()
 {
     std::string cmd (6, '\0');
     cmd [0] = 0x81;
@@ -334,7 +354,7 @@ void CameraConnect::viscaEnter ()
     voiSend (cmd);
 }
 
-void CameraConnect::viscaReturn ()
+void CameraConnect::viscaMenuBack ()
 {
     std::string cmd (6, '\0');
     cmd [0] = 0x81;
