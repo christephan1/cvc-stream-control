@@ -62,6 +62,7 @@ private slots:
     void ptzStop();
     void focusFar();
     void focusNear();
+    void focusStop();
     void focusAuto();
     void callPresetByNo(unsigned presetNo);
     void setPresetByNo(unsigned presetNo);

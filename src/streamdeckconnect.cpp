@@ -238,7 +238,9 @@ void StreamDeckConnect::createKeyHandlers()
     focusNearKey = DEFINE_KEY(1,1,7, ":/icon/icon/FocusNear.png");
     focusAutoKey = DEFINE_KEY(1,2,0, ":/icon/icon/FocusAuto.png");
     connect(focusFarKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::focusFar);
+    connect(focusFarKey,  &StreamDeckKey::keyUp,   this, &StreamDeckConnect::focusStop);
     connect(focusNearKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::focusNear);
+    connect(focusNearKey, &StreamDeckKey::keyUp,   this, &StreamDeckConnect::focusStop);
     connect(focusAutoKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::focusAuto);
 
     // camera preset area

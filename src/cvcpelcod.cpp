@@ -111,6 +111,7 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::ptzStop,   this, &CVCPelcoD::ptzStop);
     connect(streamDeckConnect, &StreamDeckConnect::focusFar,  this, &CVCPelcoD::focusFar);
     connect(streamDeckConnect, &StreamDeckConnect::focusNear, this, &CVCPelcoD::focusNear);
+    connect(streamDeckConnect, &StreamDeckConnect::focusStop, this, &CVCPelcoD::focusStop);
     connect(streamDeckConnect, &StreamDeckConnect::focusAuto, this, &CVCPelcoD::focusAuto);
 
     connect(streamDeckConnect, &StreamDeckConnect::callPreset, this, &CVCPelcoD::callPresetByNo);
@@ -511,7 +512,6 @@ void CVCPelcoD::ptzStop()
     if (settings.CAMERAS.empty()) return;
     addCommandToQueue ([this] () -> bool {
         cameraConnect[camIndex]->viscaStop();
-        ui->statusbar->showMessage("Stop");
         return true;
     });
     addCommandToQueue ([this] () -> bool {
@@ -533,10 +533,6 @@ void CVCPelcoD::focusFar()
         ui->statusbar->showMessage("Far");
         return true;
     });
-    addCommandToQueue ([this] () -> bool {
-        cameraConnect[camIndex]->viscaFocusStop();
-        return true;
-    });
 }
 
 void CVCPelcoD::focusNear()
@@ -551,8 +547,14 @@ void CVCPelcoD::focusNear()
         ui->statusbar->showMessage("Near");
         return true;
     });
+}
+
+void CVCPelcoD::focusStop()
+{
+    if (settings.CAMERAS.empty()) return;
     addCommandToQueue ([this] () -> bool {
         cameraConnect[camIndex]->viscaFocusStop();
+        ui->statusbar->showMessage("Stop Focus");
         return true;
     });
 }

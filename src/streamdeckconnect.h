@@ -43,6 +43,7 @@ class StreamDeckConnect : public QWebSocket {
         void ptzStop();
         void focusFar();
         void focusNear();
+        void focusStop();
         void focusAuto();
 
         //preset signals
