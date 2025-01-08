@@ -41,5 +41,7 @@ class CameraConnect : public QUdpSocket {
     private:
         const CameraSettings& settings;
         void voiSend(const std::string& visca_cmd);
+
+        uint32_t seqNo;
 };
 

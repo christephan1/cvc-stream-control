@@ -9,7 +9,7 @@
 #include "cvcsetting.h"
 
 CameraConnect::CameraConnect(const CameraSettings& cameraSettings, QObject* parent)
-    : QUdpSocket(parent), settings(cameraSettings)
+    : QUdpSocket(parent), settings(cameraSettings), seqNo(0)
 {
 }
 
@@ -27,7 +27,25 @@ void CameraConnect::voiSend (const std::string& visca_cmd)
     }
 
     // Send this data
-    if (QUdpSocket::writeDatagram(visca_cmd.c_str(), visca_cmd.size(), QHostAddress(settings.CAMERA_HOST), settings.CAMERA_PORT) < 0) {
+    const std::string* to_send = nullptr;
+    std::string visca_with_header(8+visca_cmd.size(), '\0');
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        seqNo++;
+        visca_with_header[0] = 0x01;
+        visca_with_header[1] = 0x00;
+        visca_with_header[2] = (char) (visca_cmd.size() >> 8) & 0xff;
+        visca_with_header[3] = (char) (visca_cmd.size()     ) & 0xff;
+        visca_with_header[4] = (char) (seqNo >> 24) & 0xff;
+        visca_with_header[5] = (char) (seqNo >> 16) & 0xff;
+        visca_with_header[6] = (char) (seqNo >>  8) & 0xff;
+        visca_with_header[7] = (char) (seqNo      ) & 0xff;
+        for (size_t i = 0; i < visca_cmd.size(); i++)
+            visca_with_header[8+i] = visca_cmd[i];
+        to_send = &visca_with_header;
+    } else {
+        to_send = &visca_cmd;
+    }
+    if (QUdpSocket::writeDatagram(to_send->c_str(), to_send->size(), QHostAddress(settings.CAMERA_HOST), settings.CAMERA_PORT) < 0) {
         perror ("UDP Send Error: ");
         return;
     }
@@ -311,58 +329,165 @@ void CameraConnect::viscaOff ()
 
 void CameraConnect::viscaMenu ()
 {
-    std::string cmd (7, '\0');
-    cmd [0] = 0x81;
-    cmd [1] = 0x01;
-    cmd [2] = 0x04;
-    cmd [3] = 0x3f;
-    cmd [4] = 0x02;
-    cmd [5] = 0x5f;
-    cmd [6] = 0xff;
-    voiSend (cmd);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (6, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x06;
+        cmd [3] = 0x06;
+        cmd [4] = 0x10;
+        cmd [5] = 0xff;
+        voiSend (cmd);
+    } else {
+        std::string cmd (7, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x04;
+        cmd [3] = 0x3f;
+        cmd [4] = 0x02;
+        cmd [5] = 0x5f;
+        cmd [6] = 0xff;
+        voiSend (cmd);
+    }
 }
 
 void CameraConnect::viscaMenuUp ()
 {
-    viscaUp(0x0E);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x03;
+        cmd [6] = 0x01;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        viscaUp(0x0E);
+    }
 }
 
 void CameraConnect::viscaMenuDown ()
 {
-    viscaDown(0x0E);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x03;
+        cmd [6] = 0x02;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        viscaDown(0x0E);
+    }
 }
 
 void CameraConnect::viscaMenuLeft ()
 {
-    viscaLeft(0x0E);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x01;
+        cmd [6] = 0x03;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        viscaLeft(0x0E);
+    }
 }
 
 void CameraConnect::viscaMenuRight ()
 {
-    viscaRight(0x0E);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x02;
+        cmd [6] = 0x03;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        viscaRight(0x0E);
+    }
 }
 
 void CameraConnect::viscaMenuEnter ()
 {
-    std::string cmd (6, '\0');
-    cmd [0] = 0x81;
-    cmd [1] = 0x01;
-    cmd [2] = 0x06;
-    cmd [3] = 0x06;
-    cmd [4] = 0x05;
-    cmd [5] = 0xff;
-    voiSend (cmd);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x07;
+        cmd [6] = 0x00;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        std::string cmd (6, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x06;
+        cmd [3] = 0x06;
+        cmd [4] = 0x05;
+        cmd [5] = 0xff;
+        voiSend (cmd);
+    }
 }
 
 void CameraConnect::viscaMenuBack ()
 {
-    std::string cmd (6, '\0');
-    cmd [0] = 0x81;
-    cmd [1] = 0x01;
-    cmd [2] = 0x06;
-    cmd [3] = 0x06;
-    cmd [4] = 0x04;
-    cmd [5] = 0xff;
-    voiSend (cmd);
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string cmd (9, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x7e;
+        cmd [3] = 0x04;
+        cmd [4] = 0x40;
+        cmd [5] = 0x07;
+        cmd [6] = 0x01;
+        cmd [7] = 0x01;
+        cmd [8] = 0xff;
+        voiSend (cmd);
+        cmd [7] = 0x00;
+        voiSend (cmd);
+    } else {
+        std::string cmd (6, '\0');
+        cmd [0] = 0x81;
+        cmd [1] = 0x01;
+        cmd [2] = 0x06;
+        cmd [3] = 0x06;
+        cmd [4] = 0x04;
+        cmd [5] = 0xff;
+        voiSend (cmd);
+    }
 }
 
