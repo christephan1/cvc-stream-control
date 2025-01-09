@@ -1,3 +1,5 @@
+// vim:ts=4:sw=4:et:cin
+
 #pragma once
 
 #include "visca.h"
@@ -11,6 +13,28 @@
 CameraConnect::CameraConnect(const CameraSettings& cameraSettings, QObject* parent)
     : QUdpSocket(parent), settings(cameraSettings), seqNo(0)
 {
+    resetSeqNo();
+}
+
+void CameraConnect::resetSeqNo()
+{
+    if (settings.CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        std::string reset_cmd(9, '\0');
+        reset_cmd[0] = 0x02;
+        reset_cmd[1] = 0x00;
+        reset_cmd[2] = 0x00;
+        reset_cmd[3] = 0x01;
+        reset_cmd[4] = 0x00;
+        reset_cmd[5] = 0x00;
+        reset_cmd[6] = 0x00;
+        reset_cmd[7] = 0x00;
+        reset_cmd[8] = 0x01;
+        if (QUdpSocket::writeDatagram(reset_cmd.c_str(), reset_cmd.size(), QHostAddress(settings.CAMERA_HOST), settings.CAMERA_PORT) < 0) {
+            perror ("UDP Send Error: ");
+            return;
+        }
+        seqNo = 0;
+    }
 }
 
 void CameraConnect::voiSend (const std::string& visca_cmd)
@@ -489,5 +513,31 @@ void CameraConnect::viscaMenuBack ()
         cmd [5] = 0xff;
         voiSend (cmd);
     }
+}
+
+void CameraConnect::viscaAutoFramingStart ()
+{
+    std::string cmd (7, '\0');
+    cmd [0] = 0x81;
+    cmd [1] = 0x01;
+    cmd [2] = 0x7e;
+    cmd [3] = 0x04;
+    cmd [4] = 0x3a;
+    cmd [5] = 0x01;
+    cmd [6] = 0xff;
+    voiSend (cmd);
+}
+
+void CameraConnect::viscaAutoFramingStop ()
+{
+    std::string cmd (7, '\0');
+    cmd [0] = 0x81;
+    cmd [1] = 0x01;
+    cmd [2] = 0x7e;
+    cmd [3] = 0x04;
+    cmd [4] = 0x3a;
+    cmd [5] = 0x00;
+    cmd [6] = 0xff;
+    voiSend (cmd);
 }
 

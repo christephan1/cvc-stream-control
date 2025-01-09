@@ -1,3 +1,5 @@
+// vim:ts=4:sw=4:et:cin
+
 #pragma once
 
 #include <string>
@@ -10,6 +12,8 @@ class CameraConnect : public QUdpSocket {
     public:
         CameraConnect(const CameraSettings&, QObject *parent = nullptr);
         virtual ~CameraConnect() {}
+
+        void resetSeqNo();
 
         void viscaMove (int x, int y);
         void viscaLeft (unsigned value);
@@ -37,6 +41,8 @@ class CameraConnect : public QUdpSocket {
         void viscaMenuRight ();
         void viscaMenuEnter ();
         void viscaMenuBack ();
+        void viscaAutoFramingStart ();
+        void viscaAutoFramingStop ();
 
     private:
         const CameraSettings& settings;
