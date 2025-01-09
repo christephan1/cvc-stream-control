@@ -75,6 +75,8 @@ private slots:
     void menuBack();
     void camOn();
     void camOff();
+    void autoFramingOn();
+    void autoFramingOff();
 
     void execNextCommand();
 

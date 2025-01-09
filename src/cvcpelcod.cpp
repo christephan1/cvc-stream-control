@@ -127,6 +127,9 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::camOn,       this, &CVCPelcoD::camOn);
     connect(streamDeckConnect, &StreamDeckConnect::camOff,      this, &CVCPelcoD::camOff);
 
+    connect(streamDeckConnect, &StreamDeckConnect::autoFramingOn,  this, &CVCPelcoD::autoFramingOn);
+    connect(streamDeckConnect, &StreamDeckConnect::autoFramingOff, this, &CVCPelcoD::autoFramingOff);
+
     streamDeckConnect->setCamIndex(camIndex);
 }
 
@@ -719,6 +722,26 @@ void CVCPelcoD::camOff()
     addCommandToQueue ([this] () -> bool {
         cameraConnect[camIndex]->viscaOff();
         ui->statusbar->showMessage("Cam Off");
+        return true;
+    });
+}
+
+void CVCPelcoD::autoFramingOn()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaAutoFramingStart();
+        ui->statusbar->showMessage("Auto Framing On");
+        return true;
+    });
+}
+
+void CVCPelcoD::autoFramingOff()
+{
+    if (settings.CAMERAS.empty()) return;
+    addCommandToQueue ([this] () -> bool {
+        cameraConnect[camIndex]->viscaAutoFramingStop();
+        ui->statusbar->showMessage("Auto Framing Off");
         return true;
     });
 }

@@ -69,5 +69,7 @@
         <file>icon/Cam_Menu_Back.png</file>
         <file>icon/Cam_On.png</file>
         <file>icon/Cam_Off.png</file>
+        <file>icon/AutoFraming_D.png</file>
+        <file>icon/AutoFraming_E.png</file>
     </qresource>
 </RCC>

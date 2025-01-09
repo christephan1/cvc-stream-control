@@ -65,6 +65,8 @@ void StreamDeckConnect::onDisconnect()
     menuBackKey = nullptr;
     camOnKey = nullptr;
     camOffKey = nullptr;
+    autoFramingOnKey = nullptr;
+    autoFramingOffKey = nullptr;
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -308,6 +310,12 @@ void StreamDeckConnect::createKeyHandlers()
     connect(menuBackKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::menuBack);
     connect(camOnKey,     &StreamDeckKey::keyDown, this, &StreamDeckConnect::camOn);
     connect(camOffKey,    &StreamDeckKey::keyDown, this, &StreamDeckConnect::camOff);
+
+    // features area
+    autoFramingOnKey  = DEFINE_KEY(2,0,1, ":/icon/icon/AutoFraming_E");
+    autoFramingOffKey = DEFINE_KEY(2,0,2, ":/icon/icon/AutoFraming_D");
+    connect(autoFramingOnKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOn);
+    connect(autoFramingOffKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOff);
 
 #undef DEFINE_KEY
 #undef DEFINE_SWITCH
