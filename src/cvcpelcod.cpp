@@ -311,8 +311,9 @@ void CVCPelcoD::zoomCam()
 
         double zoomSpeed = zoom;
         if (zoomSpeed < 0) zoomSpeed = -zoomSpeed;
-        int newZoomSpeed = MIN_ZOOM_SPEED + static_cast<int>(zoomSpeed * zoomSpeedRange + 0.5) - 1;
+        int newZoomSpeed = MIN_ZOOM_SPEED + static_cast<int>(zoomSpeed * (zoomSpeedRange-1));
         if (newZoomSpeed < MIN_ZOOM_SPEED) newZoomSpeed = MIN_ZOOM_SPEED;
+        if (newZoomSpeed > MAX_ZOOM_SPEED) newZoomSpeed = MAX_ZOOM_SPEED;
 
         if (camIndex != prevCam || newZoomSpeed != prevZoomSpeed || zoomValue != prevZoomValue) {
             //if (isManualFocus[camIndex]) {
