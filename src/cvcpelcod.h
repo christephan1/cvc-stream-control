@@ -23,6 +23,7 @@ QT_END_NAMESPACE
 class OBSConnect;
 class CameraConnect;
 class StreamDeckConnect;
+class MatrixConnect;
 
 class CVCPelcoD : public QMainWindow
 {
@@ -85,6 +86,7 @@ private:
     QGamepad *gamepad = nullptr;
     OBSConnect *obsConnect = nullptr;
     StreamDeckConnect *streamDeckConnect = nullptr;
+    MatrixConnect *matrixConnect = nullptr;
     CVCSettings settings;
 
     std::array<QPushButton*,11> obsScene;

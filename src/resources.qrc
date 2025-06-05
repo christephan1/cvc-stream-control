@@ -71,5 +71,10 @@
         <file>icon/Cam_Off.png</file>
         <file>icon/AutoFraming_D.png</file>
         <file>icon/AutoFraming_E.png</file>
+        <file>icon/Caption_B1.png</file>
+        <file>icon/Caption_1F.png</file>
+        <file>icon/Caption_Lectern.png</file>
+        <file>icon/Caption_Projector.png</file>
+        <file>icon/Caption_Caption.png</file>
     </qresource>
 </RCC>

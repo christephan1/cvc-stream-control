@@ -9,6 +9,7 @@
 #include "visca.h"
 #include "obsconnect.h"
 #include "streamdeckconnect.h"
+#include "matrixconnect.h"
 
 CVCPelcoD::CVCPelcoD(QWidget *parent)
     : QMainWindow(parent)
@@ -131,6 +132,15 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::autoFramingOff, this, &CVCPelcoD::autoFramingOff);
 
     streamDeckConnect->setCamIndex(camIndex);
+
+    //Matrix
+    matrixConnect = new MatrixConnect(settings.MATRIX);
+    connect(matrixConnect, &MatrixConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceCaption, matrixConnect, &MatrixConnect::captionSourceCaption);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceProjector, matrixConnect, &MatrixConnect::captionSourceProjector);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceLectern, matrixConnect, &MatrixConnect::captionSourceLectern);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSource1F, matrixConnect, &MatrixConnect::captionSource1F);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceB1, matrixConnect, &MatrixConnect::captionSourceB1);
 }
 
 CVCPelcoD::~CVCPelcoD()
@@ -138,6 +148,7 @@ CVCPelcoD::~CVCPelcoD()
     if(obsConnect) delete obsConnect;
     //[TODO] this will call seg Fault
     //if(streamDeckConnect) delete streamDeckConnect;
+    if(matrixConnect) delete matrixConnect;
     delete ui;
 }
 

@@ -67,6 +67,11 @@ void StreamDeckConnect::onDisconnect()
     camOffKey = nullptr;
     autoFramingOnKey = nullptr;
     autoFramingOffKey = nullptr;
+    captionSourceCaptionKey = nullptr;
+    captionSourceProjectorKey = nullptr;
+    captionSourceLecternKey = nullptr;
+    captionSource1FKey = nullptr;
+    captionSourceB1Key = nullptr;
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -316,6 +321,18 @@ void StreamDeckConnect::createKeyHandlers()
     autoFramingOffKey = DEFINE_KEY(2,0,2, ":/icon/icon/AutoFraming_D");
     connect(autoFramingOnKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOn);
     connect(autoFramingOffKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOff);
+
+    // caption source selection area
+    captionSourceCaptionKey   = DEFINE_KEY(2,3,1, ":/icon/icon/Caption_Caption.png");
+    captionSourceProjectorKey = DEFINE_KEY(2,3,2, ":/icon/icon/Caption_Projector.png");
+    captionSourceLecternKey   = DEFINE_KEY(2,3,3, ":/icon/icon/Caption_Lectern.png");
+    captionSource1FKey        = DEFINE_KEY(2,2,1, ":/icon/icon/Caption_1F.png");
+    captionSourceB1Key        = DEFINE_KEY(2,2,2, ":/icon/icon/Caption_B1.png");
+    connect(captionSourceCaptionKey,   &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceCaption);
+    connect(captionSourceProjectorKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceProjector);
+    connect(captionSourceLecternKey,   &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceLectern);
+    connect(captionSource1FKey,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSource1F);
+    connect(captionSourceB1Key,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceB1);
 
 #undef DEFINE_KEY
 #undef DEFINE_SWITCH

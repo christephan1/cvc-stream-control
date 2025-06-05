@@ -86,6 +86,51 @@ void CVCSettings::parseJSON(const QString& filename) {
 
         CAMERAS.push_back(camera);
     }
+
+    // Parse StreamDeck settings if present
+    if (root.contains("STREAM_DECK")) {
+        QJsonObject streamDeckObject = root["STREAM_DECK"].toObject();
+        
+        // Check for required keys in stream deck object
+        QStringList requiredKeys = { "STREAM_DECK_HOST", "STREAM_DECK_PORT" };
+
+        for (const QString& key : requiredKeys) {
+            if (!streamDeckObject.contains(key)) {
+                throw std::runtime_error(QString("Missing '%1' key in stream deck settings.").arg(key).toStdString());
+            }
+        }
+
+        STREAM_DECK.STREAM_DECK_HOST = streamDeckObject["STREAM_DECK_HOST"].toString();
+        STREAM_DECK.STREAM_DECK_PORT = streamDeckObject["STREAM_DECK_PORT"].toInt();
+    }
+
+    // Parse Matrix settings if present
+    if (root.contains("MATRIX")) {
+        MATRIX.enabled = true;  // Set enabled flag when Matrix section exists
+        QJsonObject matrixObject = root["MATRIX"].toObject();
+        
+        // Check for required keys in matrix object
+        QStringList requiredKeys = { "MATRIX_HOST", "MATRIX_PORT", "MATRIX_USERNAME", 
+                                   "MATRIX_PASSWORD", "MATRIX_PROTOCOL" };
+
+        for (const QString& key : requiredKeys) {
+            if (!matrixObject.contains(key)) {
+                throw std::runtime_error(QString("Missing '%1' key in matrix settings.").arg(key).toStdString());
+            }
+        }
+
+        MATRIX.MATRIX_HOST = matrixObject["MATRIX_HOST"].toString();
+        MATRIX.MATRIX_PORT = matrixObject["MATRIX_PORT"].toInt();
+        MATRIX.MATRIX_USERNAME = matrixObject["MATRIX_USERNAME"].toString();
+        MATRIX.MATRIX_PASSWORD = matrixObject["MATRIX_PASSWORD"].toString();
+
+        QString protocolString = matrixObject["MATRIX_PROTOCOL"].toString();
+        if (protocolString == "MT-VIKI") {
+            MATRIX.MATRIX_PROTOCOL = MatrixSettings::Protocol::MT_VIKI;
+        } else {
+            throw std::runtime_error(QString("Unknown matrix protocol: %1").arg(protocolString).toStdString());
+        }
+    }
 }
 
 

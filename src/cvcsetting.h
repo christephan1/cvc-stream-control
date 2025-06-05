@@ -31,23 +31,29 @@ struct CameraSettings {
     unsigned MAX_PRESET_NO;
 };
 
-struct StreamDeckKeySettings {
-    enum class KeyFunction {
-        HOME
-    };
-
-};
-
 struct StreamDeckSettings {
     QString  STREAM_DECK_HOST = "127.0.0.1";
     uint16_t STREAM_DECK_PORT = 9387;
 
 };
 
+struct MatrixSettings {
+    bool     enabled = false;  // Indicates whether Matrix settings are present in JSON
+    QString  MATRIX_HOST;
+    uint16_t MATRIX_PORT;
+    QString  MATRIX_USERNAME;
+    QString  MATRIX_PASSWORD;
+    enum class Protocol {
+        MT_VIKI
+    };
+    Protocol MATRIX_PROTOCOL;
+};
+
 struct CVCSettings {
     OBSSettings OBS;
     std::vector<CameraSettings> CAMERAS;
     StreamDeckSettings STREAM_DECK;
+    MatrixSettings MATRIX;
 
     void parseJSON(const QString& filename); //throw exception when error
 };

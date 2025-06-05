@@ -65,6 +65,13 @@ class StreamDeckConnect : public QWebSocket {
         void autoFramingOn();
         void autoFramingOff();
 
+        //caption source selection signals
+        void captionSourceCaption();
+        void captionSourceProjector();
+        void captionSourceLectern();
+        void captionSource1F();
+        void captionSourceB1();
+
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);
         void setCamIndex(int cam);
@@ -151,5 +158,11 @@ class StreamDeckConnect : public QWebSocket {
         //camara features keys
         StreamDeckKey* autoFramingOnKey = nullptr;
         StreamDeckKey* autoFramingOffKey = nullptr;
-};
 
+        //caption source selection keys
+        StreamDeckKey* captionSourceCaptionKey = nullptr;
+        StreamDeckKey* captionSourceProjectorKey = nullptr;
+        StreamDeckKey* captionSourceLecternKey = nullptr;
+        StreamDeckKey* captionSource1FKey = nullptr;
+        StreamDeckKey* captionSourceB1Key = nullptr;
+};

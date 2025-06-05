@@ -22,7 +22,8 @@ SOURCES += \
     visca.cpp \
     cvcsetting.cpp \
     streamdeckconnect.cpp \
-    streamdeckkey.cpp
+    streamdeckkey.cpp \
+    matrixconnect.cpp
 
 HEADERS += \
     cvcpelcod.h \
@@ -30,7 +31,8 @@ HEADERS += \
     obsconnect.h \
     cvcsetting.h \
     streamdeckconnect.h \
-    streamdeckkey.h
+    streamdeckkey.h \
+    matrixconnect.h
 
 FORMS += \
     cvcpelcod.ui
