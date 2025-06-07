@@ -65,7 +65,7 @@ void MatrixConnect::switchChannels(const std::vector<int>& src, const std::vecto
             url.setScheme("http");  // or https depending on your setup
             url.setHost(settings.MATRIX_HOST);
             url.setPort(settings.MATRIX_PORT);
-            url.setPath("/path/tCmd");
+            url.setPath("/goform/SetMatrixDirectCmd");
 
             // Construct the command string: "SW SRC DST1 DST2 DST3..."
             QString commandStr = QString("SW %1").arg(sourceChannel);
@@ -108,3 +108,4 @@ void MatrixConnect::switchChannels(const std::vector<int>& src, const std::vecto
         }
     }
 } 
+
