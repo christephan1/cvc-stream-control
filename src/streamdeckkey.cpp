@@ -126,7 +126,7 @@ void StreamDeckKey::paintTextOnImage(QImage& image, const QString& str) /* [stat
 
     // Set the pen and font for the text
     painter.setPen(QPen(Qt::white));
-    painter.setFont(QFont("Arial", 96));
+    painter.setFont(QFont("Noto Sans", 96));
 
     // Draw the text on the image
     painter.drawText(QRect(30,100,228,158), Qt::AlignCenter, str);

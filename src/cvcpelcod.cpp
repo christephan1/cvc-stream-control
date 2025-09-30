@@ -1,6 +1,10 @@
 // vim:ts=4:sw=4:et:cin
 
+#ifdef _WIN32
+// Windows-specific includes if needed
+#else
 #include <unistd.h>
+#endif
 #include <QtGamepad/QGamepad>
 #include <QTimer>
 #include <QDir>

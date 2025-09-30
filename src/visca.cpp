@@ -1,13 +1,13 @@
 // vim:ts=4:sw=4:et:cin
 
-#pragma once
-
 #include "visca.h"
 #include <stdio.h>
 #include <string>
+#include <vector>
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QString>
+#include <QDebug>
 #include "cvcsetting.h"
 
 CameraConnect::CameraConnect(const CameraSettings& cameraSettings, QObject* parent)
@@ -30,7 +30,7 @@ void CameraConnect::resetSeqNo()
         reset_cmd[7] = 0x00;
         reset_cmd[8] = 0x01;
         if (QUdpSocket::writeDatagram(reset_cmd.c_str(), reset_cmd.size(), QHostAddress(settings.CAMERA_HOST), settings.CAMERA_PORT) < 0) {
-            perror ("UDP Send Error: ");
+            qWarning("UDP Send Error: %s", QUdpSocket::errorString().toUtf8().constData());
             return;
         }
         seqNo = 0;
@@ -42,10 +42,10 @@ void CameraConnect::voiSend (const std::string& visca_cmd)
     // Read Previous data
     while (QUdpSocket::hasPendingDatagrams()) {
         auto n = QUdpSocket::pendingDatagramSize();
-        char c[n];
-        if (QUdpSocket::readDatagram (c, n) >= 0) {
+        std::vector<char> c(n);
+        if (QUdpSocket::readDatagram (c.data(), n) >= 0) {
         } else {
-            perror ("UDP Read Error: ");
+            qWarning("UDP Read Error: %s", QUdpSocket::errorString().toUtf8().constData());
             return;
         }
     }
@@ -70,7 +70,7 @@ void CameraConnect::voiSend (const std::string& visca_cmd)
         to_send = &visca_cmd;
     }
     if (QUdpSocket::writeDatagram(to_send->c_str(), to_send->size(), QHostAddress(settings.CAMERA_HOST), settings.CAMERA_PORT) < 0) {
-        perror ("UDP Send Error: ");
+        qWarning("UDP Send Error: %s", QUdpSocket::errorString().toUtf8().constData());
         return;
     }
 }
