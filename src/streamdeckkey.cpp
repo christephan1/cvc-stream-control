@@ -41,6 +41,18 @@ StreamDeckKey_Switch::StreamDeckKey_Switch(
 {
 }
 
+StreamDeckKey_Switch_LongPress::StreamDeckKey_Switch_LongPress(
+        StreamDeckConnect* owner,
+        const QString& deckId_, int page_, int row_, int column_,
+        QImage&& iconOff, QImage&& iconOn, QImage&& iconLongPress,
+        bool defaultEn)
+    : StreamDeckKey_Switch(owner, deckId_, page_, row_, column_, std::move(iconOff), std::move(iconOn), defaultEn)
+    , imageLongPress(std::move(iconLongPress))
+{
+    connect(this, &StreamDeckKey::keyDown, this, &StreamDeckKey_Switch_LongPress::detectLongPress_onKeyDown);
+    connect(this, &StreamDeckKey::keyUp,   this, &StreamDeckKey_Switch_LongPress::detectLongPress_onKeyUp  );
+}
+
 StreamDeckKey_Scene::StreamDeckKey_Scene(
         StreamDeckConnect* owner,
         const QString& deckId_, int page_, int row_, int column_,
@@ -59,15 +71,19 @@ StreamDeckKey_Tally::StreamDeckKey_Tally(
     , camId(camId_), isActive(isActive_), isPreview(isPreview_)
     , imageD(std::move(iconOff)), imageE(std::move(iconOn)), imageP(std::move(iconPreview))
 {
+    if (camId >= 0) {
+        setText(QString::number(camId));
+    }
 }
 
 StreamDeckKey_Preset::StreamDeckKey_Preset(
         StreamDeckConnect* owner,
         const QString& deckId_, int page_, int row_, int column_,
         QImage&& icon, unsigned presetNo_, bool isEnable_)
-    : StreamDeckKey_LongPress(owner, deckId_, page_, row_, column_, QImage(), QImage())
-    , presetNo(presetNo_), isEnable(isEnable_), image(std::move(icon))
+    : StreamDeckKey_LongPress(owner, deckId_, page_, row_, column_, std::move(icon), QImage())
+    , presetNo(presetNo_), isEnable(isEnable_)
 {
+    setText(QString::number(presetNo));
 }
 
 void StreamDeckKey::onKeyDown()
@@ -82,6 +98,7 @@ void StreamDeckKey::onKeyUp()
 
 void StreamDeckKey_LongPress::detectLongPress_onKeyDown()
 {
+    if (!m_longPressEnabled) return;
     if (!timingLongPress) {
         timingLongPress = new QTimer(this);
         timingLongPress->setSingleShot(true);
@@ -103,6 +120,55 @@ void StreamDeckKey_LongPress::detectLongPress_onKeyUp()
     if (_longPressed) {
         _longPressed = false;
         updateButton();
+    } else {
+        emit shortPressed();
+    }
+}
+
+void StreamDeckKey_LongPress::setLongPressEnable(bool en)
+{
+    m_longPressEnabled = en;
+    if (!m_longPressEnabled && timingLongPress) {
+        delete timingLongPress;
+        timingLongPress = nullptr;
+    }
+}
+
+void StreamDeckKey_Switch_LongPress::detectLongPress_onKeyDown()
+{
+    if (!m_longPressEnabled) return;
+    if (!timingLongPress) {
+        timingLongPress = new QTimer(this);
+        timingLongPress->setSingleShot(true);
+        connect(timingLongPress, &QTimer::timeout, this, [this]() {
+            _longPressed = true;
+            updateButton();
+            emit longPressed();
+        });
+        timingLongPress->start(1000);
+    }
+}
+
+void StreamDeckKey_Switch_LongPress::detectLongPress_onKeyUp()
+{
+    if (timingLongPress) {
+        delete timingLongPress;
+        timingLongPress = nullptr;
+    }
+    if (_longPressed) {
+        _longPressed = false;
+        updateButton();
+    } else {
+        emit shortPressed();
+    }
+}
+
+void StreamDeckKey_Switch_LongPress::setLongPressEnable(bool en)
+{
+    m_longPressEnabled = en;
+    if (!m_longPressEnabled && timingLongPress) {
+        delete timingLongPress;
+        timingLongPress = nullptr;
     }
 }
 
@@ -126,51 +192,68 @@ void StreamDeckKey::paintTextOnImage(QImage& image, const QString& str) /* [stat
 
     // Set the pen and font for the text
     painter.setPen(QPen(Qt::white));
-    painter.setFont(QFont("Noto Sans", 96));
+    QRect rect(20, 100, 248, 158);
+    QFont font("Noto Sans", 96);
+
+    // Make the font smaller until the text fits the rectangle
+    QFontMetrics metrics(font);
+    int width = metrics.horizontalAdvance(str);
+    if (width > rect.width()) {
+        font.setPointSizeF(font.pointSizeF() * rect.width() / width);
+    }
+    painter.setFont(font);
 
     // Draw the text on the image
-    painter.drawText(QRect(30,100,228,158), Qt::AlignCenter, str);
+    painter.drawText(rect, Qt::AlignCenter, str);
+}
+
+void StreamDeckKey::sendImage(const QImage& image)
+{
+    QJsonObject payload{
+        {"device", deckId},
+        {"page", page},
+        {"row", row},
+        {"column", column}
+    };
+
+    if (!image.isNull()) {
+        QImage imageWithText = image;
+        if (!m_text.isEmpty()) {
+            paintTextOnImage(imageWithText, m_text);
+        }
+        payload["image"] = image2dataUri(imageWithText);
+    }
+
+    deckConnect->sendRequest("setImage", std::move(payload));
 }
 
 void StreamDeckKey::updateButton()
 {
-    deckConnect->sendRequest("setImage",
-            QJsonObject{
-                {"device", deckId},
-                {"page", page},
-                {"row", row},
-                {"column", column},
-                {"image", image2dataUri(image)}
-            });
+    sendImage(image);
 }
 
 void StreamDeckKey_LongPress::updateButton()
 {
     if (_longPressed) {
-        deckConnect->sendRequest("setImage",
-                QJsonObject{
-                    {"device", deckId},
-                    {"page", page},
-                    {"row", row},
-                    {"column", column},
-                    {"image", image2dataUri(imageLongPress)}
-                });
+        sendImage(imageLongPress);
     } else {
         StreamDeckKey::updateButton();
+    }
+}
+
+void StreamDeckKey_Switch_LongPress::updateButton()
+{
+    if (_longPressed) {
+        sendImage(imageLongPress);
+    } else {
+        StreamDeckKey_Switch::updateButton();
     }
 }
 
 void StreamDeckKey_Switch::updateButton()
 {
     if (en) {
-        deckConnect->sendRequest("setImage",
-                QJsonObject{
-                    {"device", deckId},
-                    {"page", page},
-                    {"row", row},
-                    {"column", column},
-                    {"image", image2dataUri(imageOn)}
-                });
+        sendImage(imageOn);
     } else {
         StreamDeckKey::updateButton();
     }
@@ -178,39 +261,15 @@ void StreamDeckKey_Switch::updateButton()
 
 void StreamDeckKey_Tally::updateButton()
 {
-    QImage copyImage(isActive? imageE : isPreview? imageP : imageD);
-    if (camId >= 0) paintTextOnImage(copyImage, QString::number(camId));
-    deckConnect->sendRequest("setImage",
-            QJsonObject{
-                {"device", deckId},
-                {"page", page},
-                {"row", row},
-                {"column", column},
-                {"image", image2dataUri(copyImage)}
-            });
+    sendImage(isActive? imageE : isPreview? imageP : imageD);
 }
 
 void StreamDeckKey_Preset::updateButton()
 {
     if (isEnable && !isLongPressed()) {
-        QImage copyImage(image);
-        paintTextOnImage(copyImage, QString::number(presetNo));
-        deckConnect->sendRequest("setImage",
-                QJsonObject{
-                    {"device", deckId},
-                    {"page", page},
-                    {"row", row},
-                    {"column", column},
-                    {"image", image2dataUri(copyImage)}
-                });
+        StreamDeckKey_LongPress::updateButton();
     } else {
-        deckConnect->sendRequest("setImage",
-                QJsonObject{
-                    {"device", deckId},
-                    {"page", page},
-                    {"row", row},
-                    {"column", column}
-                });
+        sendImage(QImage());
     }
 }
 
@@ -244,6 +303,11 @@ void StreamDeckKey_Tally::setCamId(int camId_, bool isActive_, bool isPreview_)
         camId = camId_;
         isActive = isActive_;
         isPreview = isPreview_;
+        if (camId >= 0) {
+            setText(QString::number(camId));
+        } else {
+            setText("");
+        }
         updateButton();
     }
 }
@@ -253,6 +317,7 @@ void StreamDeckKey_Preset::setPresetNo(unsigned presetNo_, bool isEnable_)
     if (presetNo != presetNo_ || isEnable != isEnable_) {
         presetNo = presetNo_;
         isEnable = isEnable_;
+        setText(QString::number(presetNo));
         updateButton();
     }
 }

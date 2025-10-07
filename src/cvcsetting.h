@@ -37,6 +37,11 @@ struct StreamDeckSettings {
 
 };
 
+struct MatrixPort {
+    QString  NAME;
+    unsigned PORT;
+};
+
 struct MatrixSettings {
     bool     enabled = false;  // Indicates whether Matrix settings are present in JSON
     QString  MATRIX_HOST;
@@ -47,6 +52,8 @@ struct MatrixSettings {
         MT_VIKI
     };
     Protocol MATRIX_PROTOCOL;
+    std::vector<MatrixPort> INPUTS;
+    std::vector<MatrixPort> OUTPUTS;
 };
 
 struct CVCSettings {

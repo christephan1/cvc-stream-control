@@ -37,6 +37,8 @@
         <file>icon/Home_E.png</file>
         <file>icon/Util_D.png</file>
         <file>icon/Util_E.png</file>
+        <file>icon/Matrix_D.png</file>
+        <file>icon/Matrix_E.png</file>
         <file>icon/StudioMode_D.png</file>
         <file>icon/StudioMode_E.png</file>
         <file>icon/Tally_D.png</file>
@@ -76,5 +78,9 @@
         <file>icon/Caption_Lectern.png</file>
         <file>icon/Caption_Projector.png</file>
         <file>icon/Caption_Caption.png</file>
+        <file>icon/MatrixInput_D.png</file>
+        <file>icon/MatrixInput_E.png</file>
+        <file>icon/MatrixOutput_D.png</file>
+        <file>icon/MatrixOutput_E.png</file>
     </qresource>
 </RCC>

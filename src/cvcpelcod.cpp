@@ -93,7 +93,7 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(obsConnect, &OBSConnect::currentSceneChanged, this, &CVCPelcoD::selectOBSScene);
 
     //Stream Deck
-    streamDeckConnect = new StreamDeckConnect(settings.STREAM_DECK, settings.CAMERAS);
+    streamDeckConnect = new StreamDeckConnect(settings.STREAM_DECK, settings.CAMERAS, settings.MATRIX);
     connect(streamDeckConnect, &StreamDeckConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
 
     connect(obsConnect, &OBSConnect::currentSceneChanged, streamDeckConnect, &StreamDeckConnect::setCurScene);
@@ -145,6 +145,7 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::captionSourceLectern, matrixConnect, &MatrixConnect::captionSourceLectern);
     connect(streamDeckConnect, &StreamDeckConnect::captionSource1F, matrixConnect, &MatrixConnect::captionSource1F);
     connect(streamDeckConnect, &StreamDeckConnect::captionSourceB1, matrixConnect, &MatrixConnect::captionSourceB1);
+    connect(streamDeckConnect, &StreamDeckConnect::matrixSwitchChannel, matrixConnect, &MatrixConnect::switchChannel);
 }
 
 CVCPelcoD::~CVCPelcoD()

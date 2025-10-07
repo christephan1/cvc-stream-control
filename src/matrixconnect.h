@@ -22,9 +22,10 @@ class MatrixConnect : public QNetworkAccessManager {
         void captionSourceLectern();
         void captionSource1F();
         void captionSourceB1();
+        void switchChannel(unsigned src, unsigned dst);
 
     private:
-        void switchChannels(const std::vector<int>& src, const std::vector<int>& dst);
+        void switchChannels(unsigned src, const std::vector<unsigned>& dst);
 
     private:
         const MatrixSettings& settings;

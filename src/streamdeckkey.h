@@ -22,14 +22,18 @@ class StreamDeckKey : public QObject {
         virtual void onKeyDown();
         virtual void onKeyUp();
         virtual void updateButton();
+        template<typename QSTRING>
+        void setText(QSTRING&& text) { m_text = std::forward<QSTRING>(text); }
 
     protected:
+        void sendImage(const QImage& image);
         static QString image2dataUri(const QImage&);
         static void paintTextOnImage(QImage&, const QString&);
 
         StreamDeckConnect* deckConnect;
         const QString& deckId;
         int page, row, column;
+        QString m_text;
 
     private:
         QImage image;
@@ -45,6 +49,7 @@ class StreamDeckKey_LongPress : public StreamDeckKey {
 
     signals:
         void longPressed();
+        void shortPressed();
 
     private slots:
         void detectLongPress_onKeyDown();
@@ -53,6 +58,8 @@ class StreamDeckKey_LongPress : public StreamDeckKey {
     public:
         void updateButton() override;
 
+        void setLongPressEnable(bool en);
+
     protected:
         bool isLongPressed() const { return _longPressed; }
 
@@ -60,6 +67,7 @@ class StreamDeckKey_LongPress : public StreamDeckKey {
         QImage imageLongPress;
         bool _longPressed = false;
         QTimer* timingLongPress = nullptr;
+        bool m_longPressEnabled = true;
 
 };
 
@@ -77,6 +85,36 @@ class StreamDeckKey_Switch : public StreamDeckKey {
     private:
         bool en;
         QImage imageOn;
+};
+
+class StreamDeckKey_Switch_LongPress : public StreamDeckKey_Switch {
+    Q_OBJECT
+    public:
+        StreamDeckKey_Switch_LongPress(StreamDeckConnect* owner,
+                const QString& deckId_, int page_, int row_, int column_,
+                QImage&& iconOff, QImage&& iconOn, QImage&& iconLongPress,
+                bool defaultEn = false);
+        virtual ~StreamDeckKey_Switch_LongPress() {}
+
+    signals:
+        void longPressed();
+        void shortPressed();
+
+    private slots:
+        void detectLongPress_onKeyDown();
+        void detectLongPress_onKeyUp();
+
+    public:
+        void updateButton() override;
+
+        void setLongPressEnable(bool en);
+
+    private:
+        QImage imageLongPress;
+        bool _longPressed = false;
+        QTimer* timingLongPress = nullptr;
+        bool m_longPressEnabled = true;
+
 };
 
 class StreamDeckKey_Scene : public StreamDeckKey_Switch {
@@ -130,6 +168,5 @@ class StreamDeckKey_Preset : public StreamDeckKey_LongPress {
     private:
         unsigned presetNo;
         bool isEnable;
-        QImage image;
 };
 

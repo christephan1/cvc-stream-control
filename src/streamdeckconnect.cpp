@@ -10,8 +10,11 @@
 #include "cvcsetting.h"
 #include "streamdeckkey.h"
 
-StreamDeckConnect::StreamDeckConnect(const StreamDeckSettings& settings_, const std::vector<CameraSettings>& cameraSettings)
-    : QWebSocket(), settings(settings_), CAMERAS(cameraSettings)
+StreamDeckConnect::StreamDeckConnect(
+        const StreamDeckSettings& settings_,
+        const std::vector<CameraSettings>& cameraSettings,
+        const MatrixSettings& matrixSettings)
+    : QWebSocket(), settings(settings_), CAMERAS(cameraSettings), MATRIX(matrixSettings)
 {
     connect(this, &QWebSocket::connected, this, [this]() { emit updateStatus("StreamDeck connecting."); });
     connect(this, &QWebSocket::disconnected, this, &StreamDeckConnect::onDisconnect);
@@ -72,6 +75,8 @@ void StreamDeckConnect::onDisconnect()
     captionSourceLecternKey = nullptr;
     captionSource1FKey = nullptr;
     captionSourceB1Key = nullptr;
+    matrixInputKeys.clear();
+    matrixOutputKeys.clear();
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -164,6 +169,7 @@ void StreamDeckConnect::createKeyHandlers()
 {
 #define DEFINE_KEY(p,r,c,imgPath) key[p][r][c] = new StreamDeckKey(this, deckId, p, r, c, QImage(QString::fromUtf8(imgPath)))
 #define DEFINE_SWITCH(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch*>(key[p][r][c] = new StreamDeckKey_Switch(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)),en))
+#define DEFINE_SWITCH_LONG_PRESS(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch_LongPress*>(key[p][r][c] = new StreamDeckKey_Switch_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), QImage(),en))
 #define DEFINE_SCENE(p,r,c,imgOff,imgOn,scene) \
     key[p][r][c] = sceneKeyMap[scene] = new StreamDeckKey_Scene(this, deckId, p,r,c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), scene); \
     connect(key[p][r][c], &StreamDeckKey::keyDown, this, \
@@ -180,10 +186,11 @@ void StreamDeckConnect::createKeyHandlers()
     // left pane
     DEFINE_KEY(0,0,0, ":/icon/icon/Home_E.png");
     DEFINE_KEY(0,1,0, ":/icon/icon/Util_D.png");
+    DEFINE_KEY(0,2,0, ":/icon/icon/Matrix_D.png");
     connect(key[0][1][0], &StreamDeckKey::keyUp, this, [this](){ setPage(2); });
+    connect(key[0][2][0], &StreamDeckKey::keyUp, this, [this](){ setPage(3); });
     studioModeKey = DEFINE_SWITCH(0,3,0, ":/icon/icon/StudioMode_D.png", ":/icon/icon/StudioMode_E.png", isStudioMode);
     connect(studioModeKey, &StreamDeckKey::keyDown, this, [this](){ emit switchStudioMode(); });
-    clearButton(0,2,0);
 
     // scene area
     DEFINE_SCENE(0,0,1, ":/icon/icon/01D_CamOnly.png", ":/icon/icon/01E_CamOnly.png", 1);
@@ -294,7 +301,10 @@ void StreamDeckConnect::createKeyHandlers()
     // page 2
     DEFINE_KEY(2,0,0, ":/icon/icon/Home_D.png");
     DEFINE_KEY(2,1,0, ":/icon/icon/Util_E.png");
+    DEFINE_KEY(2,2,0, ":/icon/icon/Matrix_D.png");
     connect(key[2][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
+    connect(key[2][2][0], &StreamDeckKey::keyUp, this, [this](){ setPage(3); });
+    clearButton(2,3,0);
 
     // menu area
     menuKey      = DEFINE_KEY(2,1,7, ":/icon/icon/Cam_Menu.png");
@@ -321,6 +331,12 @@ void StreamDeckConnect::createKeyHandlers()
     autoFramingOffKey = DEFINE_KEY(2,0,2, ":/icon/icon/AutoFraming_D");
     connect(autoFramingOnKey,  &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOn);
     connect(autoFramingOffKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::autoFramingOff);
+    clearButton(2,0,3);
+    clearButton(2,0,4);
+    clearButton(2,1,1);
+    clearButton(2,1,2);
+    clearButton(2,1,3);
+    clearButton(2,1,4);
 
     // caption source selection area
     captionSourceCaptionKey   = DEFINE_KEY(2,3,1, ":/icon/icon/Caption_Caption.png");
@@ -333,9 +349,55 @@ void StreamDeckConnect::createKeyHandlers()
     connect(captionSourceLecternKey,   &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceLectern);
     connect(captionSource1FKey,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSource1F);
     connect(captionSourceB1Key,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceB1);
+    clearButton(2,2,3);
+    clearButton(2,2,4);
+    clearButton(2,3,4);
+
+    // page 3
+    DEFINE_KEY(3,0,0, ":/icon/icon/Home_D.png");
+    DEFINE_KEY(3,1,0, ":/icon/icon/Util_D.png");
+    DEFINE_KEY(3,2,0, ":/icon/icon/Matrix_E.png");
+    connect(key[3][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
+    connect(key[3][1][0], &StreamDeckKey::keyUp, this, [this](){ setPage(2); });
+    clearButton(3,3,0);
+
+    // matrix input area
+    for (size_t i = 0; i < 12; i ++) {
+        if (i < MATRIX.INPUTS.size()) {
+            auto theKey = DEFINE_SWITCH_LONG_PRESS(3,i/3,i%3+1, ":/icon/icon/MatrixInput_D.png", ":/icon/icon/MatrixInput_E.png", false);
+            matrixInputKeys.push_back(theKey);
+            theKey->setText(MATRIX.INPUTS[i].NAME);
+            theKey->setLongPressEnable(false);
+            connect(theKey, &StreamDeckKey_Switch_LongPress::shortPressed, this, [this, i](){ selectMatrixInput(i); });
+            connect(theKey, &StreamDeckKey_Switch_LongPress::longPressed, this, [this, i](){ 
+                if (selectedMatrixOutput != -1) emit matrixSwitchChannel(i, selectedMatrixOutput);
+            });
+        } else {
+            clearButton(3,i/3,i%3+1);
+        }
+    }
+    selectedMatrixInput = -1;
+
+    // matrix output area
+    for (size_t i = 0; i < 16; i ++) {
+        if (i < MATRIX.OUTPUTS.size()) {
+            auto theKey = DEFINE_SWITCH_LONG_PRESS(3,i/4,i%4+4, ":/icon/icon/MatrixOutput_D.png", ":/icon/icon/MatrixOutput_E.png", false);
+            matrixOutputKeys.push_back(theKey);
+            theKey->setText(MATRIX.OUTPUTS[i].NAME);
+            theKey->setLongPressEnable(false);
+            connect(theKey, &StreamDeckKey_Switch_LongPress::shortPressed, this, [this, i](){ selectMatrixOutput(i); });
+            connect(theKey, &StreamDeckKey_Switch_LongPress::longPressed, this, [this, i](){ 
+                if (selectedMatrixInput != -1) emit matrixSwitchChannel(selectedMatrixInput, i);
+            });
+        } else {
+            clearButton(3,i/4,i%4+4);
+        }
+    }
+    selectedMatrixOutput = -1;
 
 #undef DEFINE_KEY
 #undef DEFINE_SWITCH
+#undef DEFINE_SWITCH_LONG_PRESS
 #undef DEFINE_SCENE
 #undef DEFINE_TALLY
 #undef DEFINE_PRESET
@@ -447,5 +509,53 @@ void StreamDeckConnect::setStudioMode(bool en)
 {
     isStudioMode = en;
     if(studioModeKey) studioModeKey->setEnable(isStudioMode);
+}
+
+void StreamDeckConnect::selectMatrixInput(unsigned input)
+{
+    if (input >= matrixInputKeys.size()) return;
+    if (selectedMatrixInput == input) return;
+
+    if (selectedMatrixOutput != -1) {
+        matrixOutputKeys[selectedMatrixOutput]->setEnable(false);
+        selectedMatrixOutput = -1;
+    }
+
+    if (selectedMatrixInput != -1) {
+        matrixInputKeys[selectedMatrixInput]->setEnable(false);
+    }
+
+    matrixInputKeys[selectedMatrixInput = input]->setEnable(true);
+
+    for (auto key : matrixInputKeys) {
+        key->setLongPressEnable(false);
+    }
+    for (auto key : matrixOutputKeys) {
+        key->setLongPressEnable(true);
+    }
+}
+
+void StreamDeckConnect::selectMatrixOutput(unsigned output)
+{
+    if (output >= matrixOutputKeys.size()) return;
+    if (selectedMatrixOutput == output) return;
+
+    if (selectedMatrixInput != -1) {
+        matrixInputKeys[selectedMatrixInput]->setEnable(false);
+        selectedMatrixInput = -1;
+    }
+
+    if (selectedMatrixOutput != -1) {
+        matrixOutputKeys[selectedMatrixOutput]->setEnable(false);
+    }
+
+    matrixOutputKeys[selectedMatrixOutput = output]->setEnable(true);
+
+    for (auto key : matrixInputKeys) {
+        key->setLongPressEnable(true);
+    }
+    for (auto key : matrixOutputKeys) {
+        key->setLongPressEnable(false);
+    }
 }
 

@@ -12,16 +12,17 @@
 
 class StreamDeckSettings;
 class StreamDeckKey;
+class StreamDeckKey_LongPress;
 class StreamDeckKey_Switch;
+class StreamDeckKey_Switch_LongPress;
 class StreamDeckKey_Scene;
 class StreamDeckKey_Tally;
-class StreamDeckKey_LongPress;
 class StreamDeckKey_Preset;
 
 class StreamDeckConnect : public QWebSocket {
     Q_OBJECT
     public:
-        StreamDeckConnect(const StreamDeckSettings&, const std::vector<CameraSettings>&);
+        StreamDeckConnect(const StreamDeckSettings&, const std::vector<CameraSettings>&, const MatrixSettings&);
         virtual ~StreamDeckConnect() {}
 
     signals:
@@ -72,6 +73,9 @@ class StreamDeckConnect : public QWebSocket {
         void captionSource1F();
         void captionSourceB1();
 
+        //matrix signals
+        void matrixSwitchChannel(unsigned src, unsigned dst);
+
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);
         void setCamIndex(int cam);
@@ -82,9 +86,10 @@ class StreamDeckConnect : public QWebSocket {
         void createKeyHandlers();
 
         friend StreamDeckKey;
-        friend StreamDeckKey_Switch;
-        friend StreamDeckKey_Tally;
         friend StreamDeckKey_LongPress;
+        friend StreamDeckKey_Switch;
+        friend StreamDeckKey_Switch_LongPress;
+        friend StreamDeckKey_Tally;
         friend StreamDeckKey_Preset;
         void sendRequest(const char* event, QJsonObject&& payload = QJsonObject());
         void setPage(int page);
@@ -95,18 +100,21 @@ class StreamDeckConnect : public QWebSocket {
         void onDisconnect();
         void presetPrevPage();
         void presetNextPage();
+        void selectMatrixInput(unsigned input);
+        void selectMatrixOutput(unsigned output);
 
     private:
         const StreamDeckSettings& settings;
         const std::vector<CameraSettings>& CAMERAS;
+        const MatrixSettings& MATRIX;
 
         QJsonValue uuid;
         QString deckId;
 
-        static constexpr size_t NUM_PAGE = 3;
+        static constexpr size_t NUM_PAGE = 4;
         static constexpr size_t NUM_ROW = 4;
         static constexpr size_t NUM_COLUMN = 8;
-        StreamDeckKey* key[3][4][8] = {};
+        StreamDeckKey* key[NUM_PAGE][NUM_ROW][NUM_COLUMN] = {};
 
         uint_fast8_t curScene = 0;
         int curCamIndex = 0; //Active Cam
@@ -165,4 +173,10 @@ class StreamDeckConnect : public QWebSocket {
         StreamDeckKey* captionSourceLecternKey = nullptr;
         StreamDeckKey* captionSource1FKey = nullptr;
         StreamDeckKey* captionSourceB1Key = nullptr;
+
+        //matrix ports keys
+        std::vector<StreamDeckKey_Switch_LongPress*> matrixInputKeys;
+        std::vector<StreamDeckKey_Switch_LongPress*> matrixOutputKeys;
+        int selectedMatrixInput = -1;
+        int selectedMatrixOutput = -1;
 };
