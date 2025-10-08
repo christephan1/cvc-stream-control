@@ -168,6 +168,7 @@ void StreamDeckConnect::clearButton(int page, int row, int column)
 void StreamDeckConnect::createKeyHandlers()
 {
 #define DEFINE_KEY(p,r,c,imgPath) key[p][r][c] = new StreamDeckKey(this, deckId, p, r, c, QImage(QString::fromUtf8(imgPath)))
+#define DEFINE_LONG_PRESS(p,r,c,img) static_cast<StreamDeckKey_LongPress*>(key[p][r][c] = new StreamDeckKey_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(img)), QImage()))
 #define DEFINE_SWITCH(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch*>(key[p][r][c] = new StreamDeckKey_Switch(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)),en))
 #define DEFINE_SWITCH_LONG_PRESS(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch_LongPress*>(key[p][r][c] = new StreamDeckKey_Switch_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), QImage(),en))
 #define DEFINE_SCENE(p,r,c,imgOff,imgOn,scene) \
@@ -362,7 +363,7 @@ void StreamDeckConnect::createKeyHandlers()
     clearButton(3,3,0);
 
     // matrix input area
-    for (size_t i = 0; i < 12; i ++) {
+    for (size_t i = 0; i < 11; i ++) {
         if (i < MATRIX.INPUTS.size()) {
             auto theKey = DEFINE_SWITCH_LONG_PRESS(3,i/3,i%3+1, ":/icon/icon/MatrixInput_D.png", ":/icon/icon/MatrixInput_E.png", false);
             matrixInputKeys.push_back(theKey);
@@ -394,6 +395,12 @@ void StreamDeckConnect::createKeyHandlers()
         }
     }
     selectedMatrixOutput = -1;
+
+    // matrix reset key
+    StreamDeckKey_LongPress* matrixResetKey = DEFINE_LONG_PRESS(3,3,3, ":/icon/icon/BG_Purple_E.png");
+    matrixResetKey->setTitle("長按");
+    matrixResetKey->setText("Reset");
+    connect(matrixResetKey, &StreamDeckKey_LongPress::longPressed, this, &StreamDeckConnect::matrixReset);
 
 #undef DEFINE_KEY
 #undef DEFINE_SWITCH

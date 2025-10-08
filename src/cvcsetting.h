@@ -3,6 +3,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <QString>
 
 struct OBSSettings {
@@ -54,6 +55,7 @@ struct MatrixSettings {
     Protocol MATRIX_PROTOCOL;
     std::vector<MatrixPort> INPUTS;
     std::vector<MatrixPort> OUTPUTS;
+    std::unordered_map<unsigned, std::vector<unsigned>> DEFAULT_MAPPING; //INPUT -> OUTPUTS
 };
 
 struct CVCSettings {

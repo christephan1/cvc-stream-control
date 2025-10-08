@@ -82,5 +82,6 @@
         <file>icon/MatrixInput_E.png</file>
         <file>icon/MatrixOutput_D.png</file>
         <file>icon/MatrixOutput_E.png</file>
+        <file>icon/BG_Purple_E.png</file>
     </qresource>
 </RCC>

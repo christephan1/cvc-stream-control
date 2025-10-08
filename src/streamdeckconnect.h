@@ -75,6 +75,7 @@ class StreamDeckConnect : public QWebSocket {
 
         //matrix signals
         void matrixSwitchChannel(unsigned src, unsigned dst);
+        void matrixReset();
 
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);

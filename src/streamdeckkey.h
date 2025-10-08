@@ -24,16 +24,19 @@ class StreamDeckKey : public QObject {
         virtual void updateButton();
         template<typename QSTRING>
         void setText(QSTRING&& text) { m_text = std::forward<QSTRING>(text); }
+        template<typename QSTRING>
+        void setTitle(QSTRING&& text) { m_title = std::forward<QSTRING>(text); }
 
     protected:
         void sendImage(const QImage& image);
         static QString image2dataUri(const QImage&);
-        static void paintTextOnImage(QImage&, const QString&);
+        static void paintTextOnImage(QImage&, const QString&, const QString&);
 
         StreamDeckConnect* deckConnect;
         const QString& deckId;
         int page, row, column;
         QString m_text;
+        QString m_title;
 
     private:
         QImage image;

@@ -146,6 +146,7 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::captionSource1F, matrixConnect, &MatrixConnect::captionSource1F);
     connect(streamDeckConnect, &StreamDeckConnect::captionSourceB1, matrixConnect, &MatrixConnect::captionSourceB1);
     connect(streamDeckConnect, &StreamDeckConnect::matrixSwitchChannel, matrixConnect, &MatrixConnect::switchChannel);
+    connect(streamDeckConnect, &StreamDeckConnect::matrixReset,         matrixConnect, &MatrixConnect::resetMatrix);
 }
 
 CVCPelcoD::~CVCPelcoD()
