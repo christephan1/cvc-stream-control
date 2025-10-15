@@ -120,6 +120,50 @@ class StreamDeckKey_Switch_LongPress : public StreamDeckKey_Switch {
 
 };
 
+class StreamDeckKey_TriState : public StreamDeckKey_Switch {
+    Q_OBJECT
+    public:
+        StreamDeckKey_TriState(StreamDeckConnect* owner,
+                const QString& deckId_, int page_, int row_, int column_,
+                QImage&& iconOff, QImage&& iconOn, QImage&& iconActive);
+        virtual ~StreamDeckKey_TriState() {}
+
+        void setActive(bool active);
+        void updateButton() override;
+
+    private:
+        bool m_active = false;
+        QImage m_imageActive;
+};
+
+class StreamDeckKey_TriState_LongPress : public StreamDeckKey_TriState {
+    Q_OBJECT
+    public:
+        StreamDeckKey_TriState_LongPress(StreamDeckConnect* owner,
+                const QString& deckId_, int page_, int row_, int column_,
+                QImage&& iconOff, QImage&& iconOn, QImage&& iconActive, QImage&& iconLongPress);
+        virtual ~StreamDeckKey_TriState_LongPress() {}
+
+    signals:
+        void longPressed();
+        void shortPressed();
+
+    private slots:
+        void detectLongPress_onKeyDown();
+        void detectLongPress_onKeyUp();
+
+    public:
+        void updateButton() override;
+
+        void setLongPressEnable(bool en);
+
+    private:
+        QImage imageLongPress;
+        bool _longPressed = false;
+        QTimer* timingLongPress = nullptr;
+        bool m_longPressEnabled = true;
+};
+
 class StreamDeckKey_Scene : public StreamDeckKey_Switch {
     Q_OBJECT
     public:

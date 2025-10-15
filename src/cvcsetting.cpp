@@ -155,25 +155,25 @@ void CVCSettings::parseJSON(const QString& filename) {
 
         // Check for duplicate names and ports
         std::unordered_map<QString, size_t> inputNameToIndex;
-        std::unordered_map<unsigned, size_t> inputPortToIndex;
+        MATRIX.INPUT_PORT_TO_IDX.clear();
         for (size_t i = 0; i < MATRIX.INPUTS.size(); ++i) {
             const auto& input = MATRIX.INPUTS[i];
             if (!inputNameToIndex.emplace(input.NAME, i).second) {
                 throw std::runtime_error("Duplicate MATRIX INPUT NAME found: " + input.NAME.toStdString());
             }
-            if (!inputPortToIndex.emplace(input.PORT, i).second) {
+            if (!MATRIX.INPUT_PORT_TO_IDX.emplace(input.PORT, i).second) {
                 throw std::runtime_error("Duplicate MATRIX INPUT PORT found: " + std::to_string(input.PORT));
             }
         }
 
         std::unordered_map<QString, size_t> outputNameToIndex;
-        std::unordered_map<unsigned, size_t> outputPortToIndex;
+        MATRIX.OUTPUT_PORT_TO_IDX.clear();
         for (size_t i = 0; i < MATRIX.OUTPUTS.size(); ++i) {
             const auto& output = MATRIX.OUTPUTS[i];
             if (!outputNameToIndex.emplace(output.NAME, i).second) {
                 throw std::runtime_error("Duplicate MATRIX OUTPUT NAME found: " + output.NAME.toStdString());
             }
-            if (!outputPortToIndex.emplace(output.PORT, i).second) {
+            if (!MATRIX.OUTPUT_PORT_TO_IDX.emplace(output.PORT, i).second) {
                 throw std::runtime_error("Duplicate MATRIX OUTPUT PORT found: " + std::to_string(output.PORT));
             }
         }
@@ -196,8 +196,8 @@ void CVCSettings::parseJSON(const QString& filename) {
                     }
                     inputIndex = it->second;
                 } else if (inputValue.isDouble()) {
-                    auto it = inputPortToIndex.find(inputValue.toInt());
-                    if (it == inputPortToIndex.end()) {
+                    auto it = MATRIX.INPUT_PORT_TO_IDX.find(inputValue.toInt());
+                    if (it == MATRIX.INPUT_PORT_TO_IDX.end()) {
                         throw std::runtime_error("DEFAULT_MAPPING INPUT port not found: " + std::to_string(inputValue.toInt()));
                     }
                     inputIndex = it->second;
@@ -220,8 +220,8 @@ void CVCSettings::parseJSON(const QString& filename) {
                         }
                         outputIndex = it->second;
                     } else if (outputItemValue.isDouble()) {
-                        auto it = outputPortToIndex.find(outputItemValue.toInt());
-                        if (it == outputPortToIndex.end()) {
+                        auto it = MATRIX.OUTPUT_PORT_TO_IDX.find(outputItemValue.toInt());
+                        if (it == MATRIX.OUTPUT_PORT_TO_IDX.end()) {
                             throw std::runtime_error("DEFAULT_MAPPING OUTPUT port not found: " + std::to_string(outputItemValue.toInt()));
                         }
                         outputIndex = it->second;

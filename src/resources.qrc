@@ -80,8 +80,10 @@
         <file>icon/Caption_Caption.png</file>
         <file>icon/MatrixInput_D.png</file>
         <file>icon/MatrixInput_E.png</file>
+        <file>icon/MatrixInput_A.png</file>
         <file>icon/MatrixOutput_D.png</file>
         <file>icon/MatrixOutput_E.png</file>
+        <file>icon/MatrixOutput_A.png</file>
         <file>icon/BG_Purple_E.png</file>
     </qresource>
 </RCC>

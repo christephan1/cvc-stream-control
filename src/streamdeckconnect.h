@@ -4,6 +4,7 @@
 
 #include <array>
 #include <vector>
+#include <unordered_map>
 #include <QWebSocket>
 #include <QJsonValue>
 #include <QJsonObject>
@@ -15,6 +16,8 @@ class StreamDeckKey;
 class StreamDeckKey_LongPress;
 class StreamDeckKey_Switch;
 class StreamDeckKey_Switch_LongPress;
+class StreamDeckKey_TriState;
+class StreamDeckKey_TriState_LongPress;
 class StreamDeckKey_Scene;
 class StreamDeckKey_Tally;
 class StreamDeckKey_Preset;
@@ -76,11 +79,13 @@ class StreamDeckConnect : public QWebSocket {
         //matrix signals
         void matrixSwitchChannel(unsigned src, unsigned dst);
         void matrixReset();
+        void matrixGetMapping();
 
     public slots:
         void setCurScene(uint_fast8_t scene, int camId);
         void setCamIndex(int cam);
         void setStudioMode(bool en);
+        void matrixUpdateMapping(const std::unordered_map<unsigned, std::vector<unsigned>>& mapping);
 
     private:
         void connectStreamDeck();
@@ -90,6 +95,8 @@ class StreamDeckConnect : public QWebSocket {
         friend StreamDeckKey_LongPress;
         friend StreamDeckKey_Switch;
         friend StreamDeckKey_Switch_LongPress;
+        friend StreamDeckKey_TriState;
+        friend StreamDeckKey_TriState_LongPress;
         friend StreamDeckKey_Tally;
         friend StreamDeckKey_Preset;
         void sendRequest(const char* event, QJsonObject&& payload = QJsonObject());
@@ -176,8 +183,8 @@ class StreamDeckConnect : public QWebSocket {
         StreamDeckKey* captionSourceB1Key = nullptr;
 
         //matrix ports keys
-        std::vector<StreamDeckKey_Switch_LongPress*> matrixInputKeys;
-        std::vector<StreamDeckKey_Switch_LongPress*> matrixOutputKeys;
+        std::vector<StreamDeckKey_TriState_LongPress*> matrixInputKeys;
+        std::vector<StreamDeckKey_TriState_LongPress*> matrixOutputKeys;
         int selectedMatrixInput = -1;
         int selectedMatrixOutput = -1;
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <QNetworkAccessManager>
 
 class MatrixSettings;
@@ -15,6 +16,7 @@ class MatrixConnect : public QNetworkAccessManager {
 
     signals:
         void updateStatus(const QString& msg);
+        void mappingUpdated(const std::unordered_map<unsigned, std::vector<unsigned>>& mapping);
 
     public slots:
         void captionSourceCaption();
@@ -23,6 +25,7 @@ class MatrixConnect : public QNetworkAccessManager {
         void captionSource1F();
         void captionSourceB1();
         void switchChannel(unsigned src, unsigned dst);
+        void getMapping();
         void resetMatrix();
 
     private:

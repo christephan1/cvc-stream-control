@@ -170,7 +170,7 @@ void StreamDeckConnect::createKeyHandlers()
 #define DEFINE_KEY(p,r,c,imgPath) key[p][r][c] = new StreamDeckKey(this, deckId, p, r, c, QImage(QString::fromUtf8(imgPath)))
 #define DEFINE_LONG_PRESS(p,r,c,img) static_cast<StreamDeckKey_LongPress*>(key[p][r][c] = new StreamDeckKey_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(img)), QImage()))
 #define DEFINE_SWITCH(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch*>(key[p][r][c] = new StreamDeckKey_Switch(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)),en))
-#define DEFINE_SWITCH_LONG_PRESS(p,r,c,imgOff,imgOn,en) static_cast<StreamDeckKey_Switch_LongPress*>(key[p][r][c] = new StreamDeckKey_Switch_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), QImage(),en))
+#define DEFINE_TRISTATE_LONG_PRESS(p,r,c,imgOff,imgOn,imgActive) static_cast<StreamDeckKey_TriState_LongPress*>(key[p][r][c] = new StreamDeckKey_TriState_LongPress(this, deckId, p, r, c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), QImage(QString::fromUtf8(imgActive)), QImage()))
 #define DEFINE_SCENE(p,r,c,imgOff,imgOn,scene) \
     key[p][r][c] = sceneKeyMap[scene] = new StreamDeckKey_Scene(this, deckId, p,r,c, QImage(QString::fromUtf8(imgOff)), QImage(QString::fromUtf8(imgOn)), scene); \
     connect(key[p][r][c], &StreamDeckKey::keyDown, this, \
@@ -190,6 +190,7 @@ void StreamDeckConnect::createKeyHandlers()
     DEFINE_KEY(0,2,0, ":/icon/icon/Matrix_D.png");
     connect(key[0][1][0], &StreamDeckKey::keyUp, this, [this](){ setPage(2); });
     connect(key[0][2][0], &StreamDeckKey::keyUp, this, [this](){ setPage(3); });
+    connect(key[0][2][0], &StreamDeckKey::keyUp, this, &StreamDeckConnect::matrixGetMapping);
     studioModeKey = DEFINE_SWITCH(0,3,0, ":/icon/icon/StudioMode_D.png", ":/icon/icon/StudioMode_E.png", isStudioMode);
     connect(studioModeKey, &StreamDeckKey::keyDown, this, [this](){ emit switchStudioMode(); });
 
@@ -305,6 +306,7 @@ void StreamDeckConnect::createKeyHandlers()
     DEFINE_KEY(2,2,0, ":/icon/icon/Matrix_D.png");
     connect(key[2][0][0], &StreamDeckKey::keyUp, this, [this](){ setPage(0); });
     connect(key[2][2][0], &StreamDeckKey::keyUp, this, [this](){ setPage(3); });
+    connect(key[2][2][0], &StreamDeckKey::keyUp, this, &StreamDeckConnect::matrixGetMapping);
     clearButton(2,3,0);
 
     // menu area
@@ -365,13 +367,17 @@ void StreamDeckConnect::createKeyHandlers()
     // matrix input area
     for (size_t i = 0; i < 11; i ++) {
         if (i < MATRIX.INPUTS.size()) {
-            auto theKey = DEFINE_SWITCH_LONG_PRESS(3,i/3,i%3+1, ":/icon/icon/MatrixInput_D.png", ":/icon/icon/MatrixInput_E.png", false);
+            auto theKey = DEFINE_TRISTATE_LONG_PRESS(3,i/3,i%3+1, ":/icon/icon/MatrixInput_D.png", ":/icon/icon/MatrixInput_E.png", ":/icon/icon/MatrixInput_A.png");
             matrixInputKeys.push_back(theKey);
             theKey->setText(MATRIX.INPUTS[i].NAME);
             theKey->setLongPressEnable(false);
-            connect(theKey, &StreamDeckKey_Switch_LongPress::shortPressed, this, [this, i](){ selectMatrixInput(i); });
-            connect(theKey, &StreamDeckKey_Switch_LongPress::longPressed, this, [this, i](){ 
+            connect(theKey, &StreamDeckKey_TriState_LongPress::shortPressed, this, [this, i](){
+                selectMatrixInput(i);
+                emit matrixGetMapping();
+            });
+            connect(theKey, &StreamDeckKey_TriState_LongPress::longPressed, this, [this, i](){ 
                 if (selectedMatrixOutput != -1) emit matrixSwitchChannel(i, selectedMatrixOutput);
+                emit matrixGetMapping();
             });
         } else {
             clearButton(3,i/3,i%3+1);
@@ -382,13 +388,17 @@ void StreamDeckConnect::createKeyHandlers()
     // matrix output area
     for (size_t i = 0; i < 16; i ++) {
         if (i < MATRIX.OUTPUTS.size()) {
-            auto theKey = DEFINE_SWITCH_LONG_PRESS(3,i/4,i%4+4, ":/icon/icon/MatrixOutput_D.png", ":/icon/icon/MatrixOutput_E.png", false);
+            auto theKey = DEFINE_TRISTATE_LONG_PRESS(3,i/4,i%4+4, ":/icon/icon/MatrixOutput_D.png", ":/icon/icon/MatrixOutput_E.png", ":/icon/icon/MatrixOutput_A.png");
             matrixOutputKeys.push_back(theKey);
             theKey->setText(MATRIX.OUTPUTS[i].NAME);
             theKey->setLongPressEnable(false);
-            connect(theKey, &StreamDeckKey_Switch_LongPress::shortPressed, this, [this, i](){ selectMatrixOutput(i); });
-            connect(theKey, &StreamDeckKey_Switch_LongPress::longPressed, this, [this, i](){ 
+            connect(theKey, &StreamDeckKey_TriState_LongPress::shortPressed, this, [this, i](){
+                selectMatrixOutput(i);
+                emit matrixGetMapping();
+            });
+            connect(theKey, &StreamDeckKey_TriState_LongPress::longPressed, this, [this, i](){ 
                 if (selectedMatrixInput != -1) emit matrixSwitchChannel(selectedMatrixInput, i);
+                emit matrixGetMapping();
             });
         } else {
             clearButton(3,i/4,i%4+4);
@@ -400,11 +410,14 @@ void StreamDeckConnect::createKeyHandlers()
     StreamDeckKey_LongPress* matrixResetKey = DEFINE_LONG_PRESS(3,3,3, ":/icon/icon/BG_Purple_E.png");
     matrixResetKey->setTitle("長按");
     matrixResetKey->setText("Reset");
-    connect(matrixResetKey, &StreamDeckKey_LongPress::longPressed, this, &StreamDeckConnect::matrixReset);
+    connect(matrixResetKey, &StreamDeckKey_LongPress::longPressed, this, [this](){
+        emit matrixReset();
+        emit matrixGetMapping();
+    });
 
 #undef DEFINE_KEY
 #undef DEFINE_SWITCH
-#undef DEFINE_SWITCH_LONG_PRESS
+#undef DEFINE_TRISTATE_LONG_PRESS
 #undef DEFINE_SCENE
 #undef DEFINE_TALLY
 #undef DEFINE_PRESET
@@ -536,6 +549,7 @@ void StreamDeckConnect::selectMatrixInput(unsigned input)
 
     for (auto key : matrixInputKeys) {
         key->setLongPressEnable(false);
+        key->setActive(false);
     }
     for (auto key : matrixOutputKeys) {
         key->setLongPressEnable(true);
@@ -563,6 +577,56 @@ void StreamDeckConnect::selectMatrixOutput(unsigned output)
     }
     for (auto key : matrixOutputKeys) {
         key->setLongPressEnable(false);
+        key->setActive(false);
+    }
+}
+
+void StreamDeckConnect::matrixUpdateMapping(const std::unordered_map<unsigned, std::vector<unsigned>>& mapping)
+{
+    // Case 1: An input is selected.
+    // We want to highlight all outputs connected to this input.
+    if (selectedMatrixInput != -1) {
+        // Create a boolean vector to mark active outputs.
+        std::vector<bool> output_active(matrixOutputKeys.size(), false);
+        auto it = mapping.find(selectedMatrixInput);
+
+        // If the selected input has any outputs, mark them as active.
+        if (it != mapping.end()) {
+            for (unsigned out : it->second) {
+                if (out < output_active.size()) {
+                    output_active[out] = true;
+                }
+            }
+        }
+
+        // Update the visual state of all output keys.
+        for (size_t i = 0; i < matrixOutputKeys.size(); ++i) {
+            matrixOutputKeys[i]->setActive(output_active[i]);
+        }
+
+    // Case 2: An output is selected.
+    // We want to highlight the input connected to this output.
+    } else if (selectedMatrixOutput != -1) {
+        // Each output is connected to at most one input.
+        int connected_input = -1;
+
+        // Find which input is connected to the selected output.
+        for (const auto& pair : mapping) {
+            const unsigned current_input = pair.first;
+            const std::vector<unsigned>& outputs = pair.second;
+            for (unsigned output : outputs) {
+                if (output == (unsigned)selectedMatrixOutput) {
+                    connected_input = current_input;
+                    break;
+                }
+            }
+            if (connected_input != -1) break;
+        }
+
+        // Update the visual state of all input keys.
+        for (size_t i = 0; i < matrixInputKeys.size(); ++i) {
+            matrixInputKeys[i]->setActive(i == (unsigned)connected_input);
+        }
     }
 }
 

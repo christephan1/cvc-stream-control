@@ -56,6 +56,8 @@ struct MatrixSettings {
     std::vector<MatrixPort> INPUTS;
     std::vector<MatrixPort> OUTPUTS;
     std::unordered_map<unsigned, std::vector<unsigned>> DEFAULT_MAPPING; //INPUT -> OUTPUTS
+    std::unordered_map<unsigned, unsigned> INPUT_PORT_TO_IDX;
+    std::unordered_map<unsigned, unsigned> OUTPUT_PORT_TO_IDX;
 };
 
 struct CVCSettings {

@@ -139,14 +139,16 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
 
     //Matrix
     matrixConnect = new MatrixConnect(settings.MATRIX);
-    connect(matrixConnect, &MatrixConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
-    connect(streamDeckConnect, &StreamDeckConnect::captionSourceCaption, matrixConnect, &MatrixConnect::captionSourceCaption);
-    connect(streamDeckConnect, &StreamDeckConnect::captionSourceProjector, matrixConnect, &MatrixConnect::captionSourceProjector);
-    connect(streamDeckConnect, &StreamDeckConnect::captionSourceLectern, matrixConnect, &MatrixConnect::captionSourceLectern);
-    connect(streamDeckConnect, &StreamDeckConnect::captionSource1F, matrixConnect, &MatrixConnect::captionSource1F);
-    connect(streamDeckConnect, &StreamDeckConnect::captionSourceB1, matrixConnect, &MatrixConnect::captionSourceB1);
-    connect(streamDeckConnect, &StreamDeckConnect::matrixSwitchChannel, matrixConnect, &MatrixConnect::switchChannel);
-    connect(streamDeckConnect, &StreamDeckConnect::matrixReset,         matrixConnect, &MatrixConnect::resetMatrix);
+    connect(matrixConnect,     &MatrixConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceCaption,   matrixConnect,     &MatrixConnect::captionSourceCaption);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceProjector, matrixConnect,     &MatrixConnect::captionSourceProjector);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceLectern,   matrixConnect,     &MatrixConnect::captionSourceLectern);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSource1F,        matrixConnect,     &MatrixConnect::captionSource1F);
+    connect(streamDeckConnect, &StreamDeckConnect::captionSourceB1,        matrixConnect,     &MatrixConnect::captionSourceB1);
+    connect(streamDeckConnect, &StreamDeckConnect::matrixSwitchChannel, matrixConnect,     &MatrixConnect::switchChannel);
+    connect(streamDeckConnect, &StreamDeckConnect::matrixReset,         matrixConnect,     &MatrixConnect::resetMatrix);
+    connect(streamDeckConnect, &StreamDeckConnect::matrixGetMapping,    matrixConnect,     &MatrixConnect::getMapping);
+    connect(matrixConnect,     &MatrixConnect::mappingUpdated,          streamDeckConnect, &StreamDeckConnect::matrixUpdateMapping);
 }
 
 CVCPelcoD::~CVCPelcoD()
