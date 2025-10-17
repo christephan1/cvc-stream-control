@@ -377,7 +377,7 @@ void StreamDeckConnect::createKeyHandlers()
             });
             connect(theKey, &StreamDeckKey_TriState_LongPress::longPressed, this, [this, i](){ 
                 if (selectedMatrixOutput != -1) emit matrixSwitchChannel(i, selectedMatrixOutput);
-                emit matrixGetMapping();
+                QTimer::singleShot(100, this, [this](){ emit matrixGetMapping(); });
             });
         } else {
             clearButton(3,i/3,i%3+1);
@@ -398,7 +398,7 @@ void StreamDeckConnect::createKeyHandlers()
             });
             connect(theKey, &StreamDeckKey_TriState_LongPress::longPressed, this, [this, i](){ 
                 if (selectedMatrixInput != -1) emit matrixSwitchChannel(selectedMatrixInput, i);
-                emit matrixGetMapping();
+                QTimer::singleShot(100, this, [this](){ emit matrixGetMapping(); });
             });
         } else {
             clearButton(3,i/4,i%4+4);
@@ -412,7 +412,7 @@ void StreamDeckConnect::createKeyHandlers()
     matrixResetKey->setText("Reset");
     connect(matrixResetKey, &StreamDeckKey_LongPress::longPressed, this, [this](){
         emit matrixReset();
-        emit matrixGetMapping();
+        QTimer::singleShot(100, this, [this](){ emit matrixGetMapping(); });
     });
 
 #undef DEFINE_KEY
