@@ -70,13 +70,9 @@ void StreamDeckConnect::onDisconnect()
     camOffKey = nullptr;
     autoFramingOnKey = nullptr;
     autoFramingOffKey = nullptr;
-    captionSourceCaptionKey = nullptr;
-    captionSourceProjectorKey = nullptr;
-    captionSourceLecternKey = nullptr;
-    captionSource1FKey = nullptr;
-    captionSourceB1Key = nullptr;
     matrixInputKeys.clear();
     matrixOutputKeys.clear();
+    matrixMacroKeys.clear();
     for (auto& page : key)
         for (auto& row : page)
             for (StreamDeckKey*& keyPtr : row)
@@ -341,20 +337,20 @@ void StreamDeckConnect::createKeyHandlers()
     clearButton(2,1,3);
     clearButton(2,1,4);
 
-    // caption source selection area
-    captionSourceCaptionKey   = DEFINE_KEY(2,3,1, ":/icon/icon/Caption_Caption.png");
-    captionSourceProjectorKey = DEFINE_KEY(2,3,2, ":/icon/icon/Caption_Projector.png");
-    captionSourceLecternKey   = DEFINE_KEY(2,3,3, ":/icon/icon/Caption_Lectern.png");
-    captionSource1FKey        = DEFINE_KEY(2,2,1, ":/icon/icon/Caption_1F.png");
-    captionSourceB1Key        = DEFINE_KEY(2,2,2, ":/icon/icon/Caption_B1.png");
-    connect(captionSourceCaptionKey,   &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceCaption);
-    connect(captionSourceProjectorKey, &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceProjector);
-    connect(captionSourceLecternKey,   &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceLectern);
-    connect(captionSource1FKey,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSource1F);
-    connect(captionSourceB1Key,        &StreamDeckKey::keyDown, this, &StreamDeckConnect::captionSourceB1);
-    clearButton(2,2,3);
-    clearButton(2,2,4);
-    clearButton(2,3,4);
+    // matrix macros area
+    for (size_t i = 0; i < 8; i++) {
+        if (i < MATRIX.MACROS.size() && !MATRIX.MACROS[i].MAPPING.empty()) {
+            auto theKey = DEFINE_KEY(2,i/4+2,i%4+1, ":/icon/icon/BG_Purple_E.png");
+            matrixMacroKeys.push_back(theKey);
+            theKey->setTitle(MATRIX.MACROS[i].TITLE);
+            theKey->setText(MATRIX.MACROS[i].NAME);
+            connect(theKey, &StreamDeckKey::keyDown, this, [this, i](){
+                emit matrixExecMacro(i);
+            });
+        } else {
+            clearButton(2,i/4+2,i%4+1);
+        }
+    }
 
     // page 3
     DEFINE_KEY(3,0,0, ":/icon/icon/Home_D.png");
@@ -416,6 +412,7 @@ void StreamDeckConnect::createKeyHandlers()
     });
 
 #undef DEFINE_KEY
+#undef DEFINE_LONG_PRESS
 #undef DEFINE_SWITCH
 #undef DEFINE_TRISTATE_LONG_PRESS
 #undef DEFINE_SCENE

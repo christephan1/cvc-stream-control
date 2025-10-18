@@ -19,18 +19,13 @@ class MatrixConnect : public QNetworkAccessManager {
         void mappingUpdated(const std::unordered_map<unsigned, std::vector<unsigned>>& mapping);
 
     public slots:
-        void captionSourceCaption();
-        void captionSourceProjector();
-        void captionSourceLectern();
-        void captionSource1F();
-        void captionSourceB1();
         void switchChannel(unsigned src, unsigned dst);
+        void execMacro(unsigned macroIndex);
         void getMapping();
         void resetMatrix();
 
     private:
         void switchChannels(unsigned src, const std::vector<unsigned>& dst);
-        void switchChannels_old(unsigned src, const std::vector<unsigned>& dst);
 
     private:
         const MatrixSettings& settings;

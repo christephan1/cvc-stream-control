@@ -43,6 +43,12 @@ struct MatrixPort {
     unsigned PORT;
 };
 
+struct MatrixMacro {
+    QString TITLE;
+    QString NAME;
+    std::unordered_map<unsigned, std::vector<unsigned>> MAPPING; //INPUT -> OUTPUTS
+};
+
 struct MatrixSettings {
     bool     enabled = false;  // Indicates whether Matrix settings are present in JSON
     QString  MATRIX_HOST;
@@ -56,6 +62,7 @@ struct MatrixSettings {
     std::vector<MatrixPort> INPUTS;
     std::vector<MatrixPort> OUTPUTS;
     std::unordered_map<unsigned, std::vector<unsigned>> DEFAULT_MAPPING; //INPUT -> OUTPUTS
+    std::vector<MatrixMacro> MACROS;
     std::unordered_map<unsigned, unsigned> INPUT_PORT_TO_IDX;
     std::unordered_map<unsigned, unsigned> OUTPUT_PORT_TO_IDX;
 };

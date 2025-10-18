@@ -10,7 +10,20 @@
 #include <stdexcept>
 #include <unordered_set>
 
+/**
+ * @brief Parses the application settings from a JSON file.
+ *
+ * This function reads the specified JSON file, parses its contents, and populates the
+ * fields of the CVCSettings struct. It performs validation to ensure that required
+ * keys are present and that the data is well-formed. If any error occurs during
+ * parsing (e.g., file not found, invalid JSON, missing keys), it throws a
+ * std::runtime_error with a descriptive message.
+ *
+ * @param filename The path to the JSON configuration file.
+ * @throws std::runtime_error if parsing fails for any reason.
+ */
 void CVCSettings::parseJSON(const QString& filename) {
+    // Open and read the JSON file
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         throw std::runtime_error("Couldn't open JSON file.");
@@ -19,6 +32,7 @@ void CVCSettings::parseJSON(const QString& filename) {
     QByteArray jsonData = file.readAll();
     file.close();
 
+    // Parse the JSON document
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(jsonData, &jsonError);
 
@@ -28,7 +42,7 @@ void CVCSettings::parseJSON(const QString& filename) {
 
     QJsonObject root = doc.object();
 
-    // Check for required keys in the root object
+    // Check for required root keys
     if (!root.contains("OBS") || !root.contains("CAMERAS")) {
         throw std::runtime_error("Missing 'OBS' or 'CAMERAS' key in JSON.");
     }
@@ -41,7 +55,7 @@ void CVCSettings::parseJSON(const QString& filename) {
     OBS.OBS_HOST = obsObject["OBS_HOST"].toString();
     OBS.OBS_PORT = obsObject["OBS_PORT"].toInt();
 
-    // Parse camera settings
+    // Parse camera settings from the array
     QJsonArray camerasArray = root["CAMERAS"].toArray();
     for (const QJsonValue& value : camerasArray) {
         QJsonObject cameraObject = value.toObject();
@@ -87,7 +101,7 @@ void CVCSettings::parseJSON(const QString& filename) {
         CAMERAS.push_back(camera);
     }
 
-    // Parse StreamDeck settings if present
+    // Parse StreamDeck settings if the section is present
     if (root.contains("STREAM_DECK")) {
         QJsonObject streamDeckObject = root["STREAM_DECK"].toObject();
         
@@ -104,7 +118,7 @@ void CVCSettings::parseJSON(const QString& filename) {
         STREAM_DECK.STREAM_DECK_PORT = streamDeckObject["STREAM_DECK_PORT"].toInt();
     }
 
-    // Parse Matrix settings if present
+    // Parse Matrix settings if the section is present
     if (root.contains("MATRIX")) {
         MATRIX.enabled = true;  // Set enabled flag when Matrix section exists
         QJsonObject matrixObject = root["MATRIX"].toObject();
@@ -131,6 +145,7 @@ void CVCSettings::parseJSON(const QString& filename) {
             throw std::runtime_error(QString("Unknown matrix protocol: %1").arg(protocolString).toStdString());
         }
 
+        // Helper lambda to parse an array of ports (either INPUTS or OUTPUTS)
         auto parsePorts = [](const QJsonObject& parent, const QString& key) {
             std::vector<MatrixPort> ports;
             if (parent.contains(key)) {
@@ -153,7 +168,8 @@ void CVCSettings::parseJSON(const QString& filename) {
         MATRIX.INPUTS = parsePorts(matrixObject, "INPUTS");
         MATRIX.OUTPUTS = parsePorts(matrixObject, "OUTPUTS");
 
-        // Check for duplicate names and ports
+        // Create fast lookup maps for input/output names and ports to their indices.
+        // This also serves to validate that there are no duplicate names or ports.
         std::unordered_map<QString, size_t> inputNameToIndex;
         MATRIX.INPUT_PORT_TO_IDX.clear();
         for (size_t i = 0; i < MATRIX.INPUTS.size(); ++i) {
@@ -178,37 +194,42 @@ void CVCSettings::parseJSON(const QString& filename) {
             }
         }
 
-        if (matrixObject.contains("DEFAULT_MAPPING")) {
-            QJsonArray defaultMappingArray = matrixObject["DEFAULT_MAPPING"].toArray();
+        // Helper lambda to parse a mapping array (e.g., DEFAULT_MAPPING or a macro's MAPPING).
+        // It resolves input/output names or ports to their corresponding indices.
+        auto parseMapping = [this, &inputNameToIndex, &outputNameToIndex](const QJsonArray& mappingArray, const QString& errorPrefix) {
+            std::unordered_map<unsigned, std::vector<unsigned>> mapping;
             std::unordered_set<unsigned> allOutputIndices;
-            for (const QJsonValue& mappingValue : defaultMappingArray) {
+
+            for (const QJsonValue& mappingValue : mappingArray) {
                 QJsonObject mappingObject = mappingValue.toObject();
                 if (!mappingObject.contains("INPUT") || !mappingObject.contains("OUTPUT")) {
-                    throw std::runtime_error("DEFAULT_MAPPING item must contain 'INPUT' and 'OUTPUT' keys.");
+                    throw std::runtime_error(errorPrefix.toStdString() + " item must contain 'INPUT' and 'OUTPUT' keys.");
                 }
 
+                // Resolve the input, which can be specified by name (string) or port (integer)
                 unsigned inputIndex;
                 QJsonValue inputValue = mappingObject["INPUT"];
                 if (inputValue.isString()) {
                     auto it = inputNameToIndex.find(inputValue.toString());
                     if (it == inputNameToIndex.end()) {
-                        throw std::runtime_error("DEFAULT_MAPPING INPUT name not found: " + inputValue.toString().toStdString());
+                        throw std::runtime_error(errorPrefix.toStdString() + " INPUT name not found: " + inputValue.toString().toStdString());
                     }
                     inputIndex = it->second;
                 } else if (inputValue.isDouble()) {
                     auto it = MATRIX.INPUT_PORT_TO_IDX.find(inputValue.toInt());
                     if (it == MATRIX.INPUT_PORT_TO_IDX.end()) {
-                        throw std::runtime_error("DEFAULT_MAPPING INPUT port not found: " + std::to_string(inputValue.toInt()));
+                        throw std::runtime_error(errorPrefix.toStdString() + " INPUT port not found: " + std::to_string(inputValue.toInt()));
                     }
                     inputIndex = it->second;
                 } else {
-                    throw std::runtime_error("DEFAULT_MAPPING INPUT must be a string (name) or integer (port).");
+                    throw std::runtime_error(errorPrefix.toStdString() + " INPUT must be a string (name) or integer (port).");
                 }
 
+                // Resolve the output(s), which is an array of names or ports
                 std::vector<unsigned> outputIndices;
                 QJsonValue outputValue = mappingObject["OUTPUT"];
                 if (!outputValue.isArray()) {
-                    throw std::runtime_error("DEFAULT_MAPPING OUTPUT must be an array.");
+                    throw std::runtime_error(errorPrefix.toStdString() + " OUTPUT must be an array.");
                 }
                 QJsonArray outputArray = outputValue.toArray();
                 for (const QJsonValue& outputItemValue : outputArray) {
@@ -216,29 +237,68 @@ void CVCSettings::parseJSON(const QString& filename) {
                     if (outputItemValue.isString()) {
                         auto it = outputNameToIndex.find(outputItemValue.toString());
                         if (it == outputNameToIndex.end()) {
-                            throw std::runtime_error("DEFAULT_MAPPING OUTPUT name not found: " + outputItemValue.toString().toStdString());
+                            throw std::runtime_error(errorPrefix.toStdString() + " OUTPUT name not found: " + outputItemValue.toString().toStdString());
                         }
                         outputIndex = it->second;
                     } else if (outputItemValue.isDouble()) {
                         auto it = MATRIX.OUTPUT_PORT_TO_IDX.find(outputItemValue.toInt());
                         if (it == MATRIX.OUTPUT_PORT_TO_IDX.end()) {
-                            throw std::runtime_error("DEFAULT_MAPPING OUTPUT port not found: " + std::to_string(outputItemValue.toInt()));
+                            throw std::runtime_error(errorPrefix.toStdString() + " OUTPUT port not found: " + std::to_string(outputItemValue.toInt()));
                         }
                         outputIndex = it->second;
                     } else {
-                        throw std::runtime_error("DEFAULT_MAPPING OUTPUT item must be a string (name) or integer (port).");
+                        throw std::runtime_error(errorPrefix.toStdString() + " OUTPUT item must be a string (name) or integer (port).");
                     }
 
+                    // Ensure that each output port is only mapped to one input port within this mapping configuration
                     if (!allOutputIndices.insert(outputIndex).second) {
                         const auto& port = MATRIX.OUTPUTS.at(outputIndex).PORT;
-                        throw std::runtime_error("Duplicate OUTPUT in DEFAULT_MAPPING for port: " + std::to_string(port));
+                        throw std::runtime_error("Duplicate OUTPUT in " + errorPrefix.toStdString() + " for port: " + std::to_string(port));
                     }
                     outputIndices.push_back(outputIndex);
                 }
-                if (!MATRIX.DEFAULT_MAPPING.emplace(inputIndex, std::move(outputIndices)).second) {
+                // Ensure that each input is only listed once in this mapping
+                if (!mapping.emplace(inputIndex, std::move(outputIndices)).second) {
                     const auto& port = MATRIX.INPUTS.at(inputIndex).PORT;
-                    throw std::runtime_error("Duplicate INPUT in DEFAULT_MAPPING for port: " + std::to_string(port));
+                    throw std::runtime_error("Duplicate INPUT in " + errorPrefix.toStdString() + " for port: " + std::to_string(port));
                 }
+            }
+            return mapping;
+        };
+
+        // Parse the default input-to-output mapping configuration
+        if (matrixObject.contains("DEFAULT_MAPPING")) {
+            QJsonArray defaultMappingArray = matrixObject["DEFAULT_MAPPING"].toArray();
+            MATRIX.DEFAULT_MAPPING = parseMapping(defaultMappingArray, "DEFAULT_MAPPING");
+        }
+
+        // Parse the array of macros
+        if (matrixObject.contains("MACROS")) {
+            QJsonArray macrosArray = matrixObject["MACROS"].toArray();
+            for (const QJsonValue& macroValue : macrosArray) {
+                QJsonObject macroObject = macroValue.toObject();
+                // Allow for empty objects in the array as placeholders
+                if (macroObject.isEmpty()) {
+                    MATRIX.MACROS.emplace_back();
+                    continue;
+                }
+
+                // NAME is required, but TITLE is optional
+                MatrixMacro macro;
+                if (!macroObject.contains("NAME")) {
+                    throw std::runtime_error("MACROS item must contain 'NAME' key.");
+                }
+                macro.NAME = macroObject["NAME"].toString();
+
+                if (macroObject.contains("TITLE")) {
+                    macro.TITLE = macroObject["TITLE"].toString();
+                }
+
+                if (macroObject.contains("MAPPING")) {
+                    QJsonArray mappingArray = macroObject["MAPPING"].toArray();
+                    macro.MAPPING = parseMapping(mappingArray, "MACROS." + macro.NAME + ".MAPPING");
+                }
+                MATRIX.MACROS.push_back(macro);
             }
         }
     }

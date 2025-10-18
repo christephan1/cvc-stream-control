@@ -69,15 +69,9 @@ class StreamDeckConnect : public QWebSocket {
         void autoFramingOn();
         void autoFramingOff();
 
-        //caption source selection signals
-        void captionSourceCaption();
-        void captionSourceProjector();
-        void captionSourceLectern();
-        void captionSource1F();
-        void captionSourceB1();
-
         //matrix signals
         void matrixSwitchChannel(unsigned src, unsigned dst);
+        void matrixExecMacro(unsigned macroIndex);
         void matrixReset();
         void matrixGetMapping();
 
@@ -175,16 +169,12 @@ class StreamDeckConnect : public QWebSocket {
         StreamDeckKey* autoFramingOnKey = nullptr;
         StreamDeckKey* autoFramingOffKey = nullptr;
 
-        //caption source selection keys
-        StreamDeckKey* captionSourceCaptionKey = nullptr;
-        StreamDeckKey* captionSourceProjectorKey = nullptr;
-        StreamDeckKey* captionSourceLecternKey = nullptr;
-        StreamDeckKey* captionSource1FKey = nullptr;
-        StreamDeckKey* captionSourceB1Key = nullptr;
-
         //matrix ports keys
         std::vector<StreamDeckKey_TriState_LongPress*> matrixInputKeys;
         std::vector<StreamDeckKey_TriState_LongPress*> matrixOutputKeys;
         int selectedMatrixInput = -1;
         int selectedMatrixOutput = -1;
+
+        //matrix macros keys
+        std::vector<StreamDeckKey*> matrixMacroKeys;
 };
