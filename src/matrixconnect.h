@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <functional>
 #include <QNetworkAccessManager>
 
 class MatrixSettings;
@@ -26,6 +27,11 @@ class MatrixConnect : public QNetworkAccessManager {
 
     private:
         void switchChannels(unsigned src, const std::vector<unsigned>& dst);
+        void getMapping_impl(
+            std::function<void(const std::unordered_map<unsigned, std::vector<unsigned>>&)> onSuccess,
+            std::function<void()> onFailure);
+
+        void execMapping(const std::unordered_map<unsigned, std::vector<unsigned>>& mappings_to_exec);
 
     private:
         const MatrixSettings& settings;

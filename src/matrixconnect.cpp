@@ -1,6 +1,7 @@
 // vim:ts=4:sw=4:et:cin
 
 #include "matrixconnect.h"
+#include <unordered_set>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonDocument>
@@ -26,16 +27,12 @@ void MatrixConnect::execMacro(unsigned macroIndex)
         return;
     }
 
-    for (const auto& mapping : settings.MACROS[macroIndex].MAPPING) {
-        switchChannels(mapping.first, mapping.second);
-    }
+    execMapping(settings.MACROS[macroIndex].MAPPING);
 }
 
 void MatrixConnect::resetMatrix()
 {
-    for (const auto& mapping : settings.DEFAULT_MAPPING) {
-        switchChannels(mapping.first, mapping.second);
-    }
+    execMapping(settings.DEFAULT_MAPPING);
 }
 
 void MatrixConnect::switchChannels(unsigned src, const std::vector<unsigned>& dst)
@@ -111,8 +108,23 @@ void MatrixConnect::switchChannels(unsigned src, const std::vector<unsigned>& ds
 
 void MatrixConnect::getMapping()
 {
+    getMapping_impl(
+        [this](const std::unordered_map<unsigned, std::vector<unsigned>>& mapping) {
+            emit mappingUpdated(mapping);
+        },
+        []() {
+            // Failure is handled and reported inside getMapping_impl,
+            // so nothing to do here.
+        });
+}
+
+void MatrixConnect::getMapping_impl(
+    std::function<void(const std::unordered_map<unsigned, std::vector<unsigned>>&)> onSuccess,
+    std::function<void()> onFailure)
+{
     if (!settings.enabled) {
         emit updateStatus("Video Matrix device settings is not presented.");
+        if (onFailure) onFailure();
         return;
     }
 
@@ -147,7 +159,7 @@ void MatrixConnect::getMapping()
         // Use GET request instead of POST
         QNetworkReply* reply = get(request);
 
-        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, onSuccess, onFailure]() {
             if (reply->error() == QNetworkReply::NoError) {
                 QByteArray responseData = reply->readAll();
                 QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
@@ -190,8 +202,8 @@ void MatrixConnect::getMapping()
                                 warnings.append(QString("Invalid port value '%1' for output port %2.").arg(inputPorts[i]).arg(output_port));
                             }
                         }
-
-                        emit mappingUpdated(std::move(input_to_outputs_mapping));
+                        
+                        if (onSuccess) onSuccess(std::move(input_to_outputs_mapping));
                         
                         QString statusMsg = "Matrix request successful";
                         if (!warnings.isEmpty()) {
@@ -200,14 +212,78 @@ void MatrixConnect::getMapping()
                         emit updateStatus(std::move(statusMsg));
                     } else {
                         emit updateStatus(QString("Matrix getMapping failed: Missing 'SWS' key in JSON response."));
+                        if (onFailure) onFailure();
                     }
                 } else {
                      emit updateStatus(QString("Matrix getMapping failed: Invalid JSON response."));
+                     if (onFailure) onFailure();
                 }
             } else {
                 emit updateStatus(QString("Matrix request failed: %1").arg(reply->errorString()));
+                if (onFailure) onFailure();
             }
             reply->deleteLater();
         });
+    } else {
+        if (onFailure) onFailure();
     }
+}
+
+/**
+ * @brief Asynchronously executes a list of channel mappings.
+ *
+ * This function first fetches the current mapping from the matrix device.
+ *
+ * On success, it compares the desired mappings with the current ones. For each source,
+ * it calculates which destination channels are not already active and sends a command
+ * to switch only those new channels.
+ *
+ * If fetching the current mapping fails, it falls back to executing the full
+ * list of provided mappings to ensure the desired state is attempted.
+ *
+ * @param mappings_to_exec A map where the key is the source index and the value
+ *                         is a vector of destination indices to be activated.
+ */
+void MatrixConnect::execMapping(const std::unordered_map<unsigned, std::vector<unsigned>>& mappings_to_exec)
+{
+    // Define the success callback for when the current mapping is fetched successfully.
+    auto onSuccess = [this, mappings_to_exec](const std::unordered_map<unsigned, std::vector<unsigned>>& current_mapping) {
+        // Iterate over each source-to-destinations mapping requested for execution.
+        for (const auto& mapping_item : mappings_to_exec) {
+            unsigned src = mapping_item.first;
+            const std::vector<unsigned>& dsts = mapping_item.second;
+
+            // Create a set of current destinations for the source for efficient lookup.
+            std::unordered_set<unsigned> current_dsts_set;
+            auto it = current_mapping.find(src);
+            if (it != current_mapping.end()) {
+                current_dsts_set.insert(it->second.begin(), it->second.end());
+            }
+
+            // Determine which destinations are new and need to be added.
+            std::vector<unsigned> dsts_to_add;
+            for (unsigned dst : dsts) {
+                // If a desired destination is not in the current set, add it to the list.
+                if (current_dsts_set.find(dst) == current_dsts_set.end()) {
+                    dsts_to_add.push_back(dst);
+                }
+            }
+
+            // If there are any new destinations to add, send the switch command.
+            if (!dsts_to_add.empty()) {
+                switchChannels(src, dsts_to_add);
+            }
+        }
+    };
+
+    // Define the failure callback for when fetching the current mapping fails.
+    auto onFailure = [this, mappings_to_exec]() {
+        // Fallback: execute the full list of mappings without comparison.
+        for (const auto& mapping : mappings_to_exec) {
+            switchChannels(mapping.first, mapping.second);
+        }
+    };
+
+    // Asynchronously get the current mapping and trigger the appropriate callback.
+    getMapping_impl(onSuccess, onFailure);
 }
