@@ -8,6 +8,8 @@
 #include <QtGamepad/QGamepad>
 #include <QTimer>
 #include <QDir>
+#include <QMessageBox>
+#include <QCloseEvent>
 #include "cvcpelcod.h"
 #include "ui_cvcpelcod.h"
 #include "visca.h"
@@ -156,6 +158,69 @@ CVCPelcoD::~CVCPelcoD()
     delete ui;
 }
 
+void CVCPelcoD::closeEvent(QCloseEvent *event)
+{
+    if (final_close) {
+        event->accept();
+        return;
+    }
+    if (is_shutting_down) {
+        event->ignore();
+        return;
+    }
+
+    QMessageBox::StandardButton resBtn = QMessageBox::question( this, "CVC Stream Control",
+                                                                tr("Turn off all cameras and reset matrix?\n"),
+                                                                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                                                                QMessageBox::Yes);
+    if (resBtn == QMessageBox::Yes) {
+        is_shutting_down = true;
+        setEnabled(false);
+        ui->statusbar->showMessage("Shutting down...");
+
+        // 1. clear pending commands
+        std::queue<std::function<bool()>> empty;
+        cmdQueue.swap(empty);
+        udp_timeout->stop();
+        is_sock_idle = true;
+
+        // 2. wait for 0.5 seconds.
+        QTimer::singleShot(UDP_TIMEOUT_MS, this, [this]() {
+            // 3. Turn off cameras directly and reset matrix.
+            for (CameraConnect* conn : cameraConnect) {
+                conn->viscaOff();
+            }
+            if (matrixConnect) {
+                matrixConnect->resetMatrix();
+            }
+
+            // 4. Wait a bit more for packets to be sent before closing.
+            QTimer::singleShot(UDP_TIMEOUT_MS, this, [this]() {
+                final_close = true;
+                close();
+            });
+        });
+
+        event->ignore();
+    } else if (resBtn == QMessageBox::No) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
+}
+
+void CVCPelcoD::startup()
+{
+    for (size_t i = 0; i < cameraConnect.size(); ++i) {
+        addCommandToQueue([this, i]() -> bool {
+            cameraConnect[i]->viscaOn();
+            return true;
+        });
+    }
+
+    if (matrixConnect) matrixConnect->resetMatrix();
+}
+
 void CVCPelcoD::selectPrevCam(bool en)
 {
     if (en) {
@@ -291,7 +356,7 @@ void CVCPelcoD::execNextCommand()
         bool isCmdSent = cmdQueue.front()();
         cmdQueue.pop();
         if (isCmdSent) {
-            udp_timeout->start (500);
+            udp_timeout->start (CVCPelcoD::UDP_TIMEOUT_MS);
         } else {
             execNextCommand();
         }

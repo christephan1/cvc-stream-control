@@ -18,6 +18,7 @@ class QGamepad;
 class QPushButton;
 class QUdpSocket;
 class QTimer;
+class QCloseEvent;
 QT_END_NAMESPACE
 
 class OBSConnect;
@@ -32,6 +33,10 @@ class CVCPelcoD : public QMainWindow
 public:
     CVCPelcoD(QWidget *parent = nullptr);
     ~CVCPelcoD();
+    void startup();
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void selectPrevCam(bool en);
@@ -82,6 +87,8 @@ private slots:
     void execNextCommand();
 
 private:
+    static constexpr int UDP_TIMEOUT_MS = 500;
+
     Ui::CVCPelcoD *ui;
     QGamepad *gamepad = nullptr;
     OBSConnect *obsConnect = nullptr;
@@ -116,5 +123,10 @@ private:
     bool is_call_preset_in_queue = false;
     bool is_set_preset_in_queue = false;
     void addCommandToQueue(const std::function<bool()>&);
+
+    // Shutdown related
+    bool is_shutting_down = false;
+    bool final_close = false;
 };
+
 #endif // CVCPELCOD_H
