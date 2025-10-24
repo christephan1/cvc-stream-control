@@ -701,6 +701,10 @@ void CVCPelcoD::setPreset(bool en)
 void CVCPelcoD::callPresetByNo(unsigned presetNo)
 {
     if (settings.CAMERAS.empty()) return;
+    if (settings.CAMERAS[camIndex].CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
+        //Strict protocol requires to stop ptz before calling preset, otherwise the call command will be ignored.
+        ptzStop();
+    }
     addCommandToQueue ([this, presetNo] () -> bool {
         cameraConnect[camIndex]->viscaGo(presetNo);
         ui->statusbar->showMessage("CALL " + QString::number(presetNo));
