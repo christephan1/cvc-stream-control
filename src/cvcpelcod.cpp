@@ -141,12 +141,13 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
 
     //Matrix
     matrixConnect = new MatrixConnect(settings.MATRIX);
-    connect(matrixConnect,     &MatrixConnect::updateStatus, this, [this](const QString& str) {ui->statusbar->showMessage(str);});
+    connect(matrixConnect,     &MatrixConnect::updateStatus,     this, [this](const QString& str) {ui->statusbar->showMessage(str);});
     connect(streamDeckConnect, &StreamDeckConnect::matrixSwitchChannel, matrixConnect,     &MatrixConnect::switchChannel);
     connect(streamDeckConnect, &StreamDeckConnect::matrixExecMacro,     matrixConnect,     &MatrixConnect::execMacro);
     connect(streamDeckConnect, &StreamDeckConnect::matrixReset,         matrixConnect,     &MatrixConnect::resetMatrix);
     connect(streamDeckConnect, &StreamDeckConnect::matrixGetMapping,    matrixConnect,     &MatrixConnect::getMapping);
     connect(matrixConnect,     &MatrixConnect::mappingUpdated,          streamDeckConnect, &StreamDeckConnect::matrixUpdateMapping);
+    connect(matrixConnect,     &MatrixConnect::connectionFailed,        this,              &CVCPelcoD::onMatrixConnectionFailed);
 }
 
 CVCPelcoD::~CVCPelcoD()
@@ -923,6 +924,15 @@ void CVCPelcoD::switchOBSStudioMode(bool en)
 {
     if (en) {
         obsConnect->switchStudioMode();
+    }
+}
+
+void CVCPelcoD::onMatrixConnectionFailed()
+{
+    static bool errorDialogShown = false;
+    if (!errorDialogShown) {
+        errorDialogShown = true;
+        QMessageBox::warning(this, "Matrix Connection Error", "Please restart the matrix, or you are not able to control it.");
     }
 }
 

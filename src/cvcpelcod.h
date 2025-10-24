@@ -86,6 +86,8 @@ private slots:
 
     void execNextCommand();
 
+    void onMatrixConnectionFailed();
+
 private:
     static constexpr int UDP_TIMEOUT_MS = 500;
 

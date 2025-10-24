@@ -100,6 +100,7 @@ void MatrixConnect::switchChannels(unsigned src, const std::vector<unsigned>& ds
                 emit updateStatus(QString("Matrix request successful"));
             } else {
                 emit updateStatus(QString("Matrix request failed: %1") .arg(reply->errorString()));
+                emit connectionFailed();
             }
             reply->deleteLater();
         });
@@ -220,6 +221,7 @@ void MatrixConnect::getMapping_impl(
                 }
             } else {
                 emit updateStatus(QString("Matrix request failed: %1").arg(reply->errorString()));
+                emit connectionFailed();
                 if (onFailure) onFailure();
             }
             reply->deleteLater();

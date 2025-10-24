@@ -17,6 +17,7 @@ class MatrixConnect : public QNetworkAccessManager {
 
     signals:
         void updateStatus(const QString& msg);
+        void connectionFailed();
         void mappingUpdated(const std::unordered_map<unsigned, std::vector<unsigned>>& mapping);
 
     public slots:
