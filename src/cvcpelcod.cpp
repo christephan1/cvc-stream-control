@@ -702,8 +702,13 @@ void CVCPelcoD::callPresetByNo(unsigned presetNo)
 {
     if (settings.CAMERAS.empty()) return;
     if (settings.CAMERAS[camIndex].CAMERA_PROTOCAL == CameraSettings::Protocal::VISCA_STRICT) {
-        //Strict protocol requires to stop ptz before calling preset, otherwise the call command will be ignored.
-        ptzStop();
+        //Strict protocol requires to stop moving before calling preset, otherwise the call command will be ignored.
+        addCommandToQueue ([this] () -> bool {
+            if (isCamMoving[camIndex]) {
+                cameraConnect[camIndex]->viscaStop();
+                return true;
+            }
+        });
     }
     addCommandToQueue ([this, presetNo] () -> bool {
         cameraConnect[camIndex]->viscaGo(presetNo);
