@@ -301,6 +301,87 @@ void CVCSettings::parseJSON(const QString& filename) {
                 MATRIX.MACROS.push_back(macro);
             }
         }
+
+        // Parse CUSTOM_RULES
+        if (matrixObject.contains("CUSTOM_RULES")) {
+            QJsonArray rulesArray = matrixObject["CUSTOM_RULES"].toArray();
+            for (const QJsonValue& ruleValue : rulesArray) {
+                QJsonObject ruleObject = ruleValue.toObject();
+                CustomRule rule;
+
+                bool has_input = ruleObject.contains("INPUT");
+                bool has_output = ruleObject.contains("OUTPUT");
+
+                if (has_input != has_output) {
+                    throw std::runtime_error("Custom rule must have both 'INPUT' and 'OUTPUT', or neither.");
+                }
+
+                if (has_input) { // && has_output is implied
+                    rule.has_mapping_condition = true;
+                    // Parse conditions
+                    QJsonValue inputValue = ruleObject["INPUT"];
+                    if (inputValue.isString()) {
+                        auto it = inputNameToIndex.find(inputValue.toString());
+                        if (it == inputNameToIndex.end()) {
+                            throw std::runtime_error("CUSTOM_RULES INPUT name not found: " + inputValue.toString().toStdString());
+                        }
+                        rule.INPUT_IDX = it->second;
+                    } else if (inputValue.isDouble()) {
+                        auto it = MATRIX.INPUT_PORT_TO_IDX.find(inputValue.toInt());
+                        if (it == MATRIX.INPUT_PORT_TO_IDX.end()) {
+                            throw std::runtime_error("CUSTOM_RULES INPUT port not found: " + std::to_string(inputValue.toInt()));
+                        }
+                        rule.INPUT_IDX = it->second;
+                    } else {
+                        throw std::runtime_error("CUSTOM_RULES INPUT must be a string (name) or integer (port).");
+                    }
+                    QJsonValue outputValue = ruleObject["OUTPUT"];
+                    if (outputValue.isString()) {
+                        auto it = outputNameToIndex.find(outputValue.toString());
+                        if (it == outputNameToIndex.end()) {
+                            throw std::runtime_error("CUSTOM_RULES OUTPUT name not found: " + outputValue.toString().toStdString());
+                        }
+                        rule.OUTPUT_IDX = it->second;
+                    } else if (outputValue.isDouble()) {
+                        auto it = MATRIX.OUTPUT_PORT_TO_IDX.find(outputValue.toInt());
+                        if (it == MATRIX.OUTPUT_PORT_TO_IDX.end()) {
+                            throw std::runtime_error("CUSTOM_RULES OUTPUT port not found: " + std::to_string(outputValue.toInt()));
+                        }
+                        rule.OUTPUT_IDX = it->second;
+                    } else {
+                        throw std::runtime_error("CUSTOM_RULES OUTPUT must be a string (name) or integer (port).");
+                    }
+                }
+
+                // Parse actions
+                if (ruleObject.contains("OBS_SCENE_OVERRIDE_LIST")) {
+                    QJsonObject overrideObject = ruleObject["OBS_SCENE_OVERRIDE_LIST"].toObject();
+                    for (auto it = overrideObject.begin(); it != overrideObject.end(); ++it) {
+                        bool key_ok;
+                        uint_fast8_t key = it.key().toUInt(&key_ok);
+                        if (!key_ok) {
+                            throw std::runtime_error("Invalid key in OBS_SCENE_OVERRIDE_LIST: '" + it.key().toStdString() + "'. Must be an integer string.");
+                        }
+
+                        bool value_ok;
+                        uint_fast8_t value = it.value().toVariant().toUInt(&value_ok);
+
+                        if (!value_ok) {
+                            throw std::runtime_error("Invalid value for key '" + it.key().toStdString() + "' in OBS_SCENE_OVERRIDE_LIST. Must be an unsigned integer that fits in uint_fast8_t.");
+                        }
+                        rule.OBS_SCENE_OVERRIDE_LIST[key] = value;
+                    }
+                }
+                if (ruleObject.contains("OBS_SCENE_OVERRIDE_CLEAR")) {
+                    QJsonValue clearValue = ruleObject["OBS_SCENE_OVERRIDE_CLEAR"];
+                    if (!clearValue.isBool()) {
+                        throw std::runtime_error("Invalid value for OBS_SCENE_OVERRIDE_CLEAR, must be a boolean.");
+                    }
+                    rule.OBS_SCENE_OVERRIDE_CLEAR = clearValue.toBool();
+                }
+                MATRIX.CUSTOM_RULES.push_back(rule);
+            }
+        }
     }
 }
 

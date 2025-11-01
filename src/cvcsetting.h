@@ -49,6 +49,17 @@ struct MatrixMacro {
     std::unordered_map<unsigned, std::vector<unsigned>> MAPPING; //INPUT -> OUTPUTS
 };
 
+struct CustomRule {
+    // Conditions
+    bool has_mapping_condition = false;
+    unsigned INPUT_IDX;
+    unsigned OUTPUT_IDX;
+
+    // Actions
+    std::unordered_map<uint_fast8_t, uint_fast8_t> OBS_SCENE_OVERRIDE_LIST;
+    bool OBS_SCENE_OVERRIDE_CLEAR = false;
+};
+
 struct MatrixSettings {
     bool     enabled = false;  // Indicates whether Matrix settings are present in JSON
     QString  MATRIX_HOST;
@@ -65,6 +76,7 @@ struct MatrixSettings {
     std::vector<MatrixMacro> MACROS;
     std::unordered_map<unsigned, unsigned> INPUT_PORT_TO_IDX;
     std::unordered_map<unsigned, unsigned> OUTPUT_PORT_TO_IDX;
+    std::vector<CustomRule> CUSTOM_RULES;
 };
 
 struct CVCSettings {

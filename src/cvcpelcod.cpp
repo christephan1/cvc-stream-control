@@ -148,6 +148,8 @@ CVCPelcoD::CVCPelcoD(QWidget *parent)
     connect(streamDeckConnect, &StreamDeckConnect::matrixGetMapping,    matrixConnect,     &MatrixConnect::getMapping);
     connect(matrixConnect,     &MatrixConnect::mappingUpdated,          streamDeckConnect, &StreamDeckConnect::matrixUpdateMapping);
     connect(matrixConnect,     &MatrixConnect::connectionFailed,        this,              &CVCPelcoD::onMatrixConnectionFailed);
+    connect(matrixConnect,     &MatrixConnect::addOBSSceneOverrides,    obsConnect,        &OBSConnect::addSceneOverrides);
+    connect(matrixConnect,     &MatrixConnect::clearOBSSceneOverrides,  obsConnect,        &OBSConnect::clearSceneOverrides);
 }
 
 CVCPelcoD::~CVCPelcoD()

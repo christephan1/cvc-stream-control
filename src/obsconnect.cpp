@@ -185,6 +185,10 @@ void OBSConnect::removeScene(const QString& sceneName)
 
 void OBSConnect::switchToScene(uint_fast8_t sceneId, uint_fast8_t camId)
 {
+    auto iterOverride = sceneIdOverride.find(sceneId);
+    if (iterOverride != sceneIdOverride.end())
+        sceneId = iterOverride->second;
+
     auto iter1 = sceneMap.find(sceneId);
     if (iter1 != sceneMap.end()) {
         auto iter2 = iter1->second.find(camId);
@@ -221,5 +225,17 @@ uint_fast8_t OBSConnect::getNextSceneId(uint_fast8_t sceneId) const
     } else {
         return iter->first;
     }
+}
+
+void OBSConnect::addSceneOverrides(const std::unordered_map<uint_fast8_t, uint_fast8_t>& overrides)
+{
+    for (const auto& pair : overrides) {
+        sceneIdOverride[pair.first] = pair.second;
+    }
+}
+
+void OBSConnect::clearSceneOverrides()
+{
+    sceneIdOverride.clear();
 }
 

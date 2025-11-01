@@ -13,6 +13,7 @@
 MatrixConnect::MatrixConnect(const MatrixSettings& settings_)
     : QNetworkAccessManager(), settings(settings_)
 {
+    connect(this, &MatrixConnect::mappingUpdated, this, &MatrixConnect::_executeCustomRules);
 }
 
 void MatrixConnect::switchChannel(unsigned src, unsigned dst)
@@ -288,4 +289,39 @@ void MatrixConnect::execMapping(const std::unordered_map<unsigned, std::vector<u
 
     // Asynchronously get the current mapping and trigger the appropriate callback.
     getMapping_impl(onSuccess, onFailure);
+}
+
+void MatrixConnect::_executeCustomRules(const std::unordered_map<unsigned, std::vector<unsigned>>& current_mapping)
+{
+    for (const auto& rule : settings.CUSTOM_RULES) {
+        bool matched = false;
+        if (!rule.has_mapping_condition) {
+            // Rule has no conditions, so it always matches.
+            matched = true;
+        } else {
+            // Rule has an (input, output) condition. Check if it exists.
+            auto it = current_mapping.find(rule.INPUT_IDX);
+            if (it != current_mapping.end()) {
+                // Found the input. Now check if the output is in the vector.
+                const std::vector<unsigned>& outputs = it->second;
+                for (unsigned out_idx : outputs) {
+                    if (out_idx == rule.OUTPUT_IDX) {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (matched) {
+            if (rule.OBS_SCENE_OVERRIDE_CLEAR) {
+                emit clearOBSSceneOverrides();
+            }
+            if (!rule.OBS_SCENE_OVERRIDE_LIST.empty()) {
+                emit addOBSSceneOverrides(rule.OBS_SCENE_OVERRIDE_LIST);
+            }
+            // First matching rule wins.
+            return;
+        }
+    }
 }

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <map>
+#include <unordered_map>
 #include <QWebSocket>
 #include <QJsonObject>
 
@@ -22,6 +24,10 @@ class OBSConnect : public QWebSocket {
 
         uint_fast8_t getPrevSceneId(uint_fast8_t sceneId) const;
         uint_fast8_t getNextSceneId(uint_fast8_t sceneId) const;
+
+    public slots:
+        void addSceneOverrides(const std::unordered_map<uint_fast8_t, uint_fast8_t>& overrides);
+        void clearSceneOverrides();
 
     signals:
         void updateStatus(const QString& msg);
@@ -47,5 +53,7 @@ class OBSConnect : public QWebSocket {
 
         std::map<uint_fast8_t, std::map<uint_fast8_t, QString>> sceneMap; //sceneId->camId->sceneName
         bool isStudioMode = false;
+
+        std::unordered_map<uint_fast8_t, uint_fast8_t> sceneIdOverride; //sceneId->overrided sceneId
 };
 
